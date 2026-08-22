@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { api } from "@/lib/api";
 import type { Message, MessageStatus } from "@/lib/types";
 
-type MessagesState = {
+export type MessagesState = {
   /** Oldest first, per conversation. */
   byConversation: Record<number, Message[]>;
   /** Who is currently typing, per conversation. */
@@ -19,6 +19,20 @@ type MessagesState = {
 };
 
 const byId = (a: Message, b: Message) => a.id - b.id;
+
+/**
+ * One shared empty array for "nobody is typing".
+ *
+ * A selector that does `?? []` returns a fresh array on every call, which makes
+ * React's snapshot comparison fail forever: "The result of getSnapshot should
+ * be cached to avoid an infinite loop."
+ */
+const NO_TYPISTS: number[] = [];
+
+export const selectTyping =
+  (conversationId: number) =>
+  (state: MessagesState): number[] =>
+    state.typingBy[conversationId] ?? NO_TYPISTS;
 
 export const useMessages = create<MessagesState>((set, get) => ({
   byConversation: {},
@@ -123,7 +137,13 @@ export const useMessages = create<MessagesState>((set, get) => ({
           ? current
           : [...current, userId]
         : current.filter((id) => id !== userId);
-      return { typingBy: { ...state.typingBy, [conversationId]: next } };
+      // Collapse back to the shared empty array so the selector stays stable.
+      return {
+        typingBy: {
+          ...state.typingBy,
+          [conversationId]: next.length === 0 ? NO_TYPISTS : next,
+        },
+      };
     });
   },
 

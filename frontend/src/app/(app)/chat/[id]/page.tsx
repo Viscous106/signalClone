@@ -12,7 +12,7 @@ import { sendTyping } from "@/hooks/useRealtime";
 import { api } from "@/lib/api";
 import type { Conversation } from "@/lib/types";
 import { useConversations } from "@/store/conversations";
-import { useMessages } from "@/store/messages";
+import { selectTyping, useMessages } from "@/store/messages";
 import { useSession } from "@/store/session";
 
 export default function ChatPage() {
@@ -26,8 +26,10 @@ export default function ChatPage() {
 
   const [showInfo, setShowInfo] = useState(false);
   const messages = useMessages((s) => s.byConversation[conversationId]);
-  const typingIds = useMessages((s) => s.typingBy[conversationId] ?? []);
-  const { load, send, markRead } = useMessages();
+  const typingIds = useMessages(selectTyping(conversationId));
+  const load = useMessages((s) => s.load);
+  const send = useMessages((s) => s.send);
+  const markRead = useMessages((s) => s.markRead);
 
   // Deep link into a chat the sidebar has not loaded yet.
   useEffect(() => {

@@ -9,6 +9,7 @@ const KEY = {
   theme: "signal:theme",
   readReceipts: "signal:readReceipts",
   typingIndicators: "signal:typingIndicators",
+  railExpanded: "signal:railExpanded",
 } as const;
 
 function read<T>(key: string, fallback: T, parse: (raw: string) => T): T {
@@ -35,16 +36,20 @@ type PreferencesState = {
   /** Both default on: receipts and typing are a mutual opt-in in Signal. */
   readReceipts: boolean;
   typingIndicators: boolean;
+  /** Nav rail showing labels beside its icons. */
+  railExpanded: boolean;
   setTheme: (theme: Theme) => void;
   setReadReceipts: (on: boolean) => void;
   setTypingIndicators: (on: boolean) => void;
+  toggleRail: () => void;
   hydrate: () => void;
 };
 
-export const usePreferences = create<PreferencesState>((set) => ({
+export const usePreferences = create<PreferencesState>((set, get) => ({
   theme: DEFAULT_THEME,
   readReceipts: true,
   typingIndicators: true,
+  railExpanded: false,
 
   setTheme: (theme) => {
     write(KEY.theme, theme);
@@ -62,6 +67,12 @@ export const usePreferences = create<PreferencesState>((set) => ({
     set({ typingIndicators: on });
   },
 
+  toggleRail: () => {
+    const next = !get().railExpanded;
+    write(KEY.railExpanded, String(next));
+    set({ railExpanded: next });
+  },
+
   /** Called once on mount: the store cannot read storage during SSR. */
   hydrate: () => {
     const theme = read<Theme>(KEY.theme, DEFAULT_THEME, (raw) =>
@@ -72,6 +83,7 @@ export const usePreferences = create<PreferencesState>((set) => ({
       theme,
       readReceipts: read(KEY.readReceipts, true, (raw) => raw !== "false"),
       typingIndicators: read(KEY.typingIndicators, true, (raw) => raw !== "false"),
+      railExpanded: read(KEY.railExpanded, false, (raw) => raw === "true"),
     });
   },
 }));
