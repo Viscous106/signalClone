@@ -7,7 +7,7 @@ import { OtpInput } from "@/components/auth/OtpInput";
 import { SIGNAL_BLUE, SignalLockup } from "@/components/ui/SignalMark";
 import { ApiError, api } from "@/lib/api";
 import { DEFAULT_COUNTRY, type Country, flagFor } from "@/lib/countries";
-import { displayPhone, isValidPhone } from "@/lib/phone";
+import { displayPhone, isValidPhone, parseTypedNumber } from "@/lib/phone";
 import type { User } from "@/lib/types";
 
 type Step = "phone" | "code" | "name";
@@ -145,7 +145,17 @@ export function LoginFlow({ onAuthenticated }: { onAuthenticated: (user: User) =
                     autoComplete="tel-national"
                     placeholder="Phone number"
                     value={national}
-                    onChange={(e) => setNational(e.target.value.replace(/[^\d\s-]/g, ""))}
+                    onChange={(e) => {
+                      // A pasted or typed international number retargets the
+                      // country selector, so +91… never becomes +1 91….
+                      const parsed = parseTypedNumber(e.target.value, country);
+                      if (parsed) {
+                        setCountry(parsed.country);
+                        setNational(parsed.national);
+                        return;
+                      }
+                      setNational(e.target.value.replace(/[^\d\s+-]/g, ""));
+                    }}
                     className="w-full rounded-t-md border-b border-edge bg-surface-2 px-3 py-3 text-body1 text-label outline-none placeholder:text-label-2 focus:border-accent"
                   />
                 </div>

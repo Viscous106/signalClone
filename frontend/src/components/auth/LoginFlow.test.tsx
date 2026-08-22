@@ -100,6 +100,42 @@ describe("LoginFlow", () => {
     expect(screen.getByText(/555 123 4567/)).toBeInTheDocument();
   });
 
+  it("never asks a returning user for a name, even typing a full number", async () => {
+    // The bug: with the default country selected, typing +91… produced
+    // +1 91…, a different number, so an existing account looked new and was
+    // asked to pick a name again.
+    const user = userEvent.setup();
+    const onAuthenticated = vi.fn();
+    const fetchMock = mockApi({
+      "/auth/start": ok({ otp_sent: true, is_new: false }),
+      "/auth/verify": ok({ id: 9, display_name: "Yash Virulkar" }),
+    });
+    render(<LoginFlow onAuthenticated={onAuthenticated} />);
+
+    await user.type(screen.getByLabelText(/phone number/i), "+919834758028");
+    await user.click(screen.getByRole("button", { name: /next/i }));
+
+    const start = fetchMock.mock.calls.find((c) => String(c[0]).includes("/auth/start"));
+    expect(JSON.parse(String(start?.[1]?.body))).toEqual({ phone: "+919834758028" });
+
+    await enterCode(user);
+
+    await waitFor(() => expect(onAuthenticated).toHaveBeenCalled());
+    expect(screen.queryByLabelText(/your name/i)).not.toBeInTheDocument();
+  });
+
+  it("switches the country selector to match a typed international number", async () => {
+    const user = userEvent.setup();
+    mockApi({});
+    render(<LoginFlow onAuthenticated={vi.fn()} />);
+
+    expect(screen.getByText("United States")).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/phone number/i), "+919834758028");
+
+    expect(screen.getByText("India")).toBeInTheDocument();
+    expect(screen.getByText("+91")).toBeInTheDocument();
+  });
+
   it("logs a returning user straight in", async () => {
     const user = userEvent.setup();
     const onAuthenticated = vi.fn();
