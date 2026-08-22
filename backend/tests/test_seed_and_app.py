@@ -34,6 +34,29 @@ class TestSeed:
             assert conv.last_message_at == max(times), "sidebar sort key must match newest message"
 
 
+    def test_leaves_a_realistic_mix_of_read_and_unread(self, db):
+        """A seed where every chat is unread looks broken rather than lived-in."""
+        from app.db.models import ConversationMember, Message, User
+
+        seed(db)
+        alice = db.query(User).filter_by(username="alice").one()
+
+        badges = {}
+        for member in db.query(ConversationMember).filter_by(user_id=alice.id).all():
+            badges[member.conversation_id] = (
+                db.query(Message)
+                .filter(
+                    Message.conversation_id == member.conversation_id,
+                    Message.id > member.last_read_message_id,
+                    Message.sender_id != alice.id,
+                )
+                .count()
+            )
+
+        assert any(count > 0 for count in badges.values()), "nothing unread — no badges to show"
+        assert any(count == 0 for count in badges.values()), "everything unread — looks broken"
+
+
 class TestApp:
     def test_health_endpoint(self, client):
         r = client.get("/api/health")

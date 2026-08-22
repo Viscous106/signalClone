@@ -1,34 +1,49 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 
+import { NavRail } from "@/components/rail/NavRail";
+import { Sidebar } from "@/components/sidebar/Sidebar";
 import { loadCurrentUser } from "@/lib/session";
 import { useSession } from "@/store/session";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const params = useParams<{ id?: string }>();
   const { user, setUser } = useSession();
-  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     // The cookie survives reloads but the store does not, so rehydrate the
-    // session from the server on mount.
-    if (user) {
-      setChecked(true);
-      return;
-    }
-    loadCurrentUser()
-      .then((me) => {
-        if (me) setUser(me);
-        else router.replace("/login");
-      })
-      .finally(() => setChecked(true));
+    // session from the server on mount. `user` is the only state we need:
+    // either it gets set, or we have already redirected away.
+    if (user) return;
+
+    let cancelled = false;
+    loadCurrentUser().then((me) => {
+      if (cancelled) return;
+      if (me) setUser(me);
+      else router.replace("/login");
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [user, setUser, router]);
 
-  if (!checked) {
-    return <div className="min-h-screen bg-surface" aria-busy="true" />;
+  if (!user) {
+    return <div className="h-screen bg-surface" aria-busy="true" />;
   }
 
-  return <div className="min-h-screen bg-surface">{children}</div>;
+  // Settings takes over the whole window, as it does in Signal.
+  const chrome = !pathname.startsWith("/settings");
+  const activeId = params?.id ? Number(params.id) : null;
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-surface">
+      <NavRail user={user} />
+      {chrome && <Sidebar meId={user.id} activeId={activeId} />}
+      <section className="min-w-0 flex-1">{children}</section>
+    </div>
+  );
 }

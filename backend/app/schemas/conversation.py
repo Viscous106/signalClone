@@ -1,0 +1,85 @@
+from datetime import datetime, timedelta, timezone
+
+from pydantic import BaseModel, ConfigDict, Field, computed_field
+
+from app.core.config import get_settings
+
+
+class UserBrief(BaseModel):
+    """A person as they appear in a list, header, or member roster."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    display_name: str
+    phone: str
+    username: str | None = None
+    avatar_url: str | None
+    avatar_color: str
+    about: str | None
+    last_seen_at: datetime | None
+
+    @computed_field
+    @property
+    def online(self) -> bool:
+        """Mocked presence, derived from last_seen_at."""
+        if self.last_seen_at is None:
+            return False
+        # SQLite hands back naive datetimes even for timezone=True columns.
+        seen = self.last_seen_at
+        if seen.tzinfo is None:
+            seen = seen.replace(tzinfo=timezone.utc)
+        window = timedelta(seconds=get_settings().presence_window_seconds)
+        return datetime.now(timezone.utc) - seen < window
+
+
+class MessageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    conversation_id: int
+    sender_id: int | None
+    type: str
+    body: str
+    reply_to_id: int | None = None
+    created_at: datetime
+    edited_at: datetime | None = None
+    deleted_at: datetime | None = None
+    sender: UserBrief | None = None
+
+
+class ConversationOut(BaseModel):
+    """One sidebar row. The display title is derived client-side from `type`,
+    `name` and `members`, so presentation rules stay in one place."""
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    id: int
+    type: str
+    name: str | None
+    avatar_url: str | None
+    avatar_color: str | None
+    created_by: int | None
+    created_at: datetime
+    last_message_at: datetime
+    # Read from the model's flattened property, but serialised as "members".
+    members: list[UserBrief] = Field(default_factory=list, validation_alias="member_users")
+    last_message: MessageOut | None = None
+    unread_count: int = 0
+
+
+class ConversationCreate(BaseModel):
+    # Exactly one shape: a direct chat with `user_id`, or a group with
+    # `name` + `member_ids`.
+    user_id: int | None = None
+    name: str | None = None
+    member_ids: list[int] | None = None
+
+
+class MarkReadRequest(BaseModel):
+    message_id: int
+
+
+class MessageCreate(BaseModel):
+    body: str
+    reply_to_id: int | None = None

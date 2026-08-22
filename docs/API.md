@@ -14,20 +14,20 @@ Base `/api`. JSON in, JSON out. Auth via JWT in an httpOnly cookie; `401` when a
 |---|---|---|
 | GET | `/users/me` | current session user |
 | PATCH | `/users/me` | `display_name`, `about`, `avatar_url` |
-| GET | `/users/search?q=` | by phone or username, excludes self |
+| GET | `/users/search?q=` | by display name, username, or phone; excludes self; blank `q` returns `[]` |
 
 ## Contacts
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/contacts` | address book, alphabetical |
-| POST | `/contacts` | `{phone}` or `{user_id}` |
-| DELETE | `/contacts/{id}` | |
+| POST | `/contacts` | `{phone}` or `{user_id}`; `201`, idempotent; `404` if not on Signal |
+| DELETE | `/contacts/{user_id}` | takes the contact's **user** id, not the join-row id |
 
 ## Conversations
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/conversations` | sorted by `last_message_at` desc; each row carries `last_message`, `unread_count`, `members` |
-| POST | `/conversations` | direct: `{user_id}` (returns the existing chat if there is one) · group: `{name, member_ids[]}` |
+| POST | `/conversations` | direct: `{user_id}` — returns the existing chat if there is one, so the sidebar cannot fill with duplicates. Group (`{name, member_ids[]}`) arrives in Phase 4 |
 | GET | `/conversations/{id}` | detail + members |
 | PATCH | `/conversations/{id}` | rename group — admin only |
 | GET | `/conversations/{id}/members` | |
@@ -44,6 +44,21 @@ Base `/api`. JSON in, JSON out. Auth via JWT in an httpOnly cookie; `401` when a
 
 ## WebSocket
 `GET /ws?token={jwt}` — one socket per tab. Event contract is in [ARCHITECTURE.md](./ARCHITECTURE.md#realtime).
+
+## Notes on the list endpoint
+
+`GET /conversations` is the sidebar's only call. Each row already carries
+`last_message`, `unread_count` and `members`, and the whole response costs a
+fixed **6 SQL statements** regardless of how many conversations you have —
+newest message per conversation and unread counts are each one grouped query.
+A test asserts the statement count does not grow with the row count.
+
+Presence is mocked: `UserBrief.online` is computed from `last_seen_at` against
+a 120-second window.
+
+The display title is deliberately **not** returned. The server stays structural
+(`type`, `name`, `members`) and the client derives the title, so the rule for
+"what do we call an unnamed group" lives in exactly one place.
 
 ## Conventions
 - Errors: `{detail: "..."}` with `400` validation · `401` unauthenticated · `403` not a member / not admin · `404` missing.

@@ -49,3 +49,62 @@ def client(engine):
     app.dependency_overrides[get_db] = _override
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture()
+def make_user(db):
+    """Create a user directly, bypassing the auth flow."""
+    from app.db.models import User, pick_avatar_color
+
+    def _make(phone: str, display_name: str, **kwargs):
+        user = User(
+            phone=phone,
+            display_name=display_name,
+            avatar_color=pick_avatar_color(phone),
+            **kwargs,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+
+    return _make
+
+
+@pytest.fixture()
+def login(client):
+    """Sign the shared client in as a phone number, registering if needed."""
+    from app.core.config import get_settings
+
+    def _login(phone: str, display_name: str | None = None):
+        body: dict[str, str] = {"phone": phone, "code": get_settings().mock_otp}
+        if display_name:
+            body["display_name"] = display_name
+        response = client.post("/api/auth/verify", json=body)
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    return _login
+
+
+@pytest.fixture()
+def count_queries(engine):
+    """Count SQL statements, to prove list endpoints do not go N+1."""
+    from contextlib import contextmanager
+
+    from sqlalchemy import event
+
+    @contextmanager
+    def _counter():
+        statements: list[str] = []
+
+        def _record(conn, cursor, statement, params, context, executemany):
+            statements.append(statement)
+
+        event.listen(engine, "before_cursor_execute", _record)
+        try:
+            yield statements
+        finally:
+            event.remove(engine, "before_cursor_execute", _record)
+
+    return _counter

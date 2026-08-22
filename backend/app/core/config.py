@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_days: int = 30
 
+    # A user counts as "online" if seen within this window (mocked presence).
+    presence_window_seconds: int = 120
+
     cors_origins: list[str] = ["http://localhost:3000"]
     seed_on_boot: bool = True
 

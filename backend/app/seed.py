@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.models import (
@@ -125,4 +126,38 @@ def seed(db: Session) -> None:
     _add_messages(db, d1, users, DIRECT_1, start=45)
     _add_messages(db, grp, users, GROUP, start=4)
 
+    _mark_everything_read(db)
+    # ...then leave the newest group chatter unread, so the sidebar opens with
+    # one badge rather than a badge on everything.
+    _leave_unread(db, grp, users["alice"], count=2)
+
     db.commit()
+
+
+def _mark_everything_read(db: Session) -> None:
+    newest = dict(
+        db.query(Message.conversation_id, func.max(Message.id))
+        .group_by(Message.conversation_id)
+        .all()
+    )
+    for member in db.query(ConversationMember).all():
+        member.last_read_message_id = newest.get(member.conversation_id, 0)
+    db.flush()
+
+
+def _leave_unread(db: Session, conv: Conversation, user: User, count: int) -> None:
+    """Rewind one person's read cursor so `count` messages show as unread."""
+    recent = (
+        db.query(Message)
+        .filter(Message.conversation_id == conv.id, Message.sender_id != user.id)
+        .order_by(Message.id.desc())
+        .limit(count)
+        .all()
+    )
+    if not recent:
+        return
+    member = (
+        db.query(ConversationMember).filter_by(conversation_id=conv.id, user_id=user.id).one()
+    )
+    member.last_read_message_id = recent[-1].id - 1
+    db.flush()

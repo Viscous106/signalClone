@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, users
+from app.api import auth, contacts, conversations, messages, users
 from app.core.config import get_settings
 from app.db.models import Base
 from app.db.session import SessionLocal, engine
@@ -40,6 +40,9 @@ def create_app(init_db: bool = True) -> FastAPI:
 
     app.include_router(auth.router)
     app.include_router(users.router)
+    app.include_router(contacts.router)
+    app.include_router(conversations.router)
+    app.include_router(messages.router)
 
     @app.get("/api/health")
     def health() -> dict[str, str]:

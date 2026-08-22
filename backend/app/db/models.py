@@ -121,6 +121,11 @@ class Conversation(Base):
     def is_group(self) -> bool:
         return self.type == "group"
 
+    @property
+    def member_users(self) -> list["User"]:
+        """The people in this conversation, flattened past the join rows."""
+        return [m.user for m in self.members]
+
 
 class ConversationMember(Base):
     """Membership, role, and read position."""
