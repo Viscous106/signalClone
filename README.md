@@ -120,6 +120,8 @@ Two decisions worth knowing:
   horizontally would mean swapping it for Redis pub/sub.
 - **No migrations.** `create_all` on boot, which is honest for one developer on
   SQLite.
+- **The hosted database is ephemeral**, because the free plan has no disk. The
+  seed runs on every boot, so the demo is always usable; see Deployment.
 - **New accounts are given starter chats** so the app is never empty on first
   sign-in. Demo behaviour, and clearly switchable rather than hidden.
 - **System notices never count as unread.** "Alice added Bob" belongs in the
@@ -152,11 +154,17 @@ docker build -t signal-clone .
 docker run -p 8000:8000 -v signal-data:/data signal-clone
 ```
 
-`render.yaml` deploys exactly that. Two things matter:
+`render.yaml` deploys exactly that, on the free plan.
 
-- **A persistent disk** mounted at `/data`. SQLite lives in a file, so without
-  one the database is wiped on every redeploy.
-- **`JWT_SECRET`** — the default is a development placeholder. `render.yaml`
-  generates one.
+**The hosted demo's data is ephemeral.** Render's free plan does not allow a
+persistent disk, and SQLite is a file, so the database is rebuilt from the seed
+on every deploy and whenever a sleeping instance wakes. The demo accounts and
+their conversations are therefore always present; anything a visitor creates
+lasts for that instance's life. Mounting a disk at `/data` on a paid plan makes
+it persistent with no code or config change — the image already points there.
 
-The host must support WebSockets; most do, but a few static hosts do not.
+Also worth knowing: a free instance sleeps after inactivity, so the first
+request can take 30–60 seconds and WebSockets are down while it is asleep.
+
+`JWT_SECRET` must be set — the default in `config.py` is a development
+placeholder. `render.yaml` generates one.

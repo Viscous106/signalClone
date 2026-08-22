@@ -1,0 +1,17 @@
+# Never copy host build output or dependencies into the image: they are built
+# for this machine, and they clobber what the image installed itself.
+**/node_modules
+**/.next
+**/out
+**/.venv
+**/__pycache__
+**/*.pyc
+**/*.egg-info
+**/.pytest_cache
+
+# Local state and noise
+**/*.db
+**/.env
+.git
+.gitignore
+**/.DS_Store

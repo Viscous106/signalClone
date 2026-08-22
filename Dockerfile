@@ -20,9 +20,13 @@ RUN pip install --no-cache-dir ./backend
 COPY backend/ backend/
 COPY --from=web /app/frontend/out frontend/out
 
-# The database lives on a mounted disk; without one it resets on redeploy.
+# The database always lives at /data. Mount a disk there and it persists;
+# without one it is just a directory in the container and rebuilds from the
+# seed on each boot. No config change either way.
+# (Deliberately no VOLUME: hosts ignore it, and locally it silently creates
+# anonymous volumes that make an ephemeral setup look persistent.)
+RUN mkdir -p /data
 ENV DATABASE_URL=sqlite:////data/signal.db
-VOLUME ["/data"]
 
 EXPOSE 8000
 WORKDIR /app/backend
