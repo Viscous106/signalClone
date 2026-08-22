@@ -3,8 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { api } from "@/lib/api";
-import type { User } from "@/lib/types";
+import { loadCurrentUser } from "@/lib/session";
 import { useSession } from "@/store/session";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -19,10 +18,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       setChecked(true);
       return;
     }
-    api
-      .get<User>("/api/users/me")
-      .then(setUser)
-      .catch(() => router.replace("/login"))
+    loadCurrentUser()
+      .then((me) => {
+        if (me) setUser(me);
+        else router.replace("/login");
+      })
       .finally(() => setChecked(true));
   }, [user, setUser, router]);
 
