@@ -1,4 +1,14 @@
-"""Idempotent seed data so the app is usable the moment it boots."""
+"""Seed data.
+
+Two separate jobs, both idempotent so they can run on every boot:
+
+* the **demo cast** and their conversations, so the app is never empty;
+* the **demo owner** — one designated account with seeded history, recreated if
+  it goes missing.
+
+Everyone else who registers gets the cast as contacts and nothing more. Chats
+are earned: nobody is dropped into a conversation they were not invited to.
+"""
 
 from datetime import datetime, timedelta, timezone
 
@@ -21,6 +31,13 @@ PEOPLE = [
     ("+15550000004", "dave", "Dave Kim", None),
     ("+15550000005", "erin", "Erin Patel", "Do not disturb"),
 ]
+
+# The account the demo history belongs to.
+OWNER_PHONE = "+919834758028"
+OWNER_NAME = "Yash Virulkar"
+OWNER_USERNAME = "yash"
+
+GROUP_NAME = "Weekend Trip"
 
 DIRECT_1 = [
     ("alice", "Hey! Are we still on for tomorrow?"),
@@ -47,101 +64,106 @@ GROUP = [
     ("carol", "Sunscreen. Learn from last time."),
 ]
 
+# The owner's own threads.
+OWNER_WITH_ALICE = [
+    ("owner", "Hey Alice, just set this up."),
+    ("alice", "Welcome! It looks good on you."),
+    ("alice", "Did you get the notes I sent over?"),
+]
+
+OWNER_WITH_BOB = [
+    ("bob", "Hey! Are we still on for tomorrow?"),
+    ("owner", "Yep, 7pm works."),
+    ("bob", "Perfect, I'll book the table."),
+]
+
 
 def _now_minus(minutes: int) -> datetime:
     return datetime.now(timezone.utc) - timedelta(minutes=minutes)
 
 
-def _add_messages(db: Session, conv: Conversation, users: dict[str, User], script, start: int):
+def _get_or_create_user(
+    db: Session, phone: str, username: str, display_name: str, about: str | None = None
+) -> User:
+    existing = db.query(User).filter(User.phone == phone).first()
+    if existing is not None:
+        return existing
+    user = User(
+        phone=phone,
+        username=username,
+        display_name=display_name,
+        about=about,
+        avatar_token=pick_avatar_token(phone),
+        last_seen_at=_now_minus(5),
+    )
+    db.add(user)
+    db.flush()
+    return user
+
+
+def _link_contacts(db: Session, a: User, b: User) -> None:
+    """Contacts are directional, so both entries are needed."""
+    for owner, other in ((a, b), (b, a)):
+        exists = (
+            db.query(Contact).filter_by(owner_id=owner.id, contact_user_id=other.id).first()
+        )
+        if exists is None:
+            db.add(Contact(owner_id=owner.id, contact_user_id=other.id))
+    db.flush()
+
+
+def _add_messages(
+    db: Session, conv: Conversation, cast: dict[str, User], script, start: int
+) -> list[Message]:
     """Lay the script out backwards from `start` minutes ago, 3 minutes apart."""
     total = len(script)
-    # Compute every timestamp up front: `last_message_at` has to equal the newest
-    # message exactly, and calling now() twice drifts by microseconds.
+    # Compute every timestamp up front: `last_message_at` has to equal the
+    # newest message exactly, and calling now() twice drifts by microseconds.
     stamps = [_now_minus(start + (total - i - 1) * 3) for i in range(total)]
-    for (username, body), created_at in zip(script, stamps):
-        db.add(
-            Message(
-                conversation_id=conv.id,
-                sender_id=users[username].id,
-                body=body,
-                created_at=created_at,
-            )
+    written = []
+    for (who, body), created_at in zip(script, stamps):
+        message = Message(
+            conversation_id=conv.id,
+            sender_id=cast[who].id,
+            body=body,
+            created_at=created_at,
         )
+        db.add(message)
+        written.append(message)
+    db.flush()
     conv.last_message_at = stamps[-1]
-    db.flush()
+    return written
 
 
-def seed(db: Session) -> None:
-    if db.query(User).count() > 0:
-        return  # already seeded
-
-    users: dict[str, User] = {}
-    for phone, username, name, about in PEOPLE:
-        u = User(
-            phone=phone,
-            username=username,
-            display_name=name,
-            about=about,
-            avatar_token=pick_avatar_token(phone),
-            last_seen_at=_now_minus(5),
-        )
-        db.add(u)
-        users[username] = u
-    db.flush()
-
-    # Everyone knows Alice; Alice knows everyone.
-    for username, u in users.items():
-        if username == "alice":
-            continue
-        db.add(Contact(owner_id=users["alice"].id, contact_user_id=u.id))
-        db.add(Contact(owner_id=u.id, contact_user_id=users["alice"].id))
-    db.flush()
-
-    def make_conv(kind: str, members: list[str], name: str | None = None) -> Conversation:
-        conv = Conversation(
-            type=kind,
-            name=name,
-            created_by=users[members[0]].id,
-            avatar_token=pick_avatar_token(name or "".join(members)),
-        )
-        db.add(conv)
-        db.flush()
-        for i, username in enumerate(members):
-            db.add(
-                ConversationMember(
-                    conversation_id=conv.id,
-                    user_id=users[username].id,
-                    role="admin" if (kind == "group" and i == 0) else "member",
-                )
-            )
-        db.flush()
-        return conv
-
-    d1 = make_conv("direct", ["alice", "bob"])
-    d2 = make_conv("direct", ["alice", "carol"])
-    grp = make_conv("group", ["alice", "bob", "carol", "dave"], name="Weekend Trip")
-
-    # Group is most recent, so it lands at the top of the sidebar.
-    _add_messages(db, d2, users, DIRECT_2, start=180)
-    _add_messages(db, d1, users, DIRECT_1, start=45)
-    _add_messages(db, grp, users, GROUP, start=4)
-
-    _mark_everything_read(db)
-    # ...then leave the newest group chatter unread, so the sidebar opens with
-    # one badge rather than a badge on everything.
-    _leave_unread(db, grp, users["alice"], count=2)
-
-    db.commit()
-
-
-def _mark_everything_read(db: Session) -> None:
-    newest = dict(
-        db.query(Message.conversation_id, func.max(Message.id))
-        .group_by(Message.conversation_id)
-        .all()
+def _make_conversation(
+    db: Session, kind: str, members: list[User], name: str | None = None
+) -> Conversation:
+    conv = Conversation(
+        type=kind,
+        name=name,
+        created_by=members[0].id,
+        avatar_token=pick_avatar_token(name or "".join(m.phone for m in members)),
     )
-    for member in db.query(ConversationMember).all():
-        member.last_read_message_id = newest.get(member.conversation_id, 0)
+    db.add(conv)
+    db.flush()
+    for index, member in enumerate(members):
+        db.add(
+            ConversationMember(
+                conversation_id=conv.id,
+                user_id=member.id,
+                role="admin" if (kind == "group" and index == 0) else "member",
+            )
+        )
+    db.flush()
+    return conv
+
+
+def _mark_read(db: Session, conv: Conversation) -> None:
+    newest = (
+        db.query(func.max(Message.id)).filter(Message.conversation_id == conv.id).scalar() or 0
+    )
+    for member in db.query(ConversationMember).filter_by(conversation_id=conv.id).all():
+        member.last_read_message_id = newest
     db.flush()
 
 
@@ -156,8 +178,94 @@ def _leave_unread(db: Session, conv: Conversation, user: User, count: int) -> No
     )
     if not recent:
         return
-    member = (
-        db.query(ConversationMember).filter_by(conversation_id=conv.id, user_id=user.id).one()
-    )
+    member = db.query(ConversationMember).filter_by(conversation_id=conv.id, user_id=user.id).one()
     member.last_read_message_id = recent[-1].id - 1
     db.flush()
+
+
+def _ensure_cast(db: Session) -> dict[str, User]:
+    cast = {}
+    for phone, username, name, about in PEOPLE:
+        cast[username] = _get_or_create_user(db, phone, username, name, about)
+    # Everyone knows Alice; Alice knows everyone.
+    for username, user in cast.items():
+        if username != "alice":
+            _link_contacts(db, cast["alice"], user)
+    return cast
+
+
+def _ensure_demo_chats(db: Session, cast: dict[str, User]) -> Conversation:
+    """Alice's own threads and the group. Created once."""
+    group = db.query(Conversation).filter_by(type="group", name=GROUP_NAME).first()
+    if group is not None:
+        return group
+
+    d1 = _make_conversation(db, "direct", [cast["alice"], cast["bob"]])
+    d2 = _make_conversation(db, "direct", [cast["alice"], cast["carol"]])
+    group = _make_conversation(
+        db, "group", [cast["alice"], cast["bob"], cast["carol"], cast["dave"]], name=GROUP_NAME
+    )
+
+    _add_messages(db, d2, cast, DIRECT_2, start=180)
+    _add_messages(db, d1, cast, DIRECT_1, start=45)
+    _add_messages(db, group, cast, GROUP, start=12)
+
+    for conv in (d1, d2, group):
+        _mark_read(db, conv)
+    # Leave the newest group chatter unread for Alice, so her sidebar has a badge.
+    _leave_unread(db, group, cast["alice"], count=2)
+    return group
+
+
+def _ensure_owner(db: Session, cast: dict[str, User], group: Conversation) -> User:
+    """The designated demo account, recreated whenever it is missing."""
+    existing = db.query(User).filter(User.phone == OWNER_PHONE).first()
+    if existing is not None:
+        return existing
+
+    owner = _get_or_create_user(db, OWNER_PHONE, OWNER_USERNAME, OWNER_NAME)
+    for user in cast.values():
+        _link_contacts(db, owner, user)
+
+    people = {**cast, "owner": owner}
+
+    with_bob = _make_conversation(db, "direct", [owner, cast["bob"]])
+    _add_messages(db, with_bob, people, OWNER_WITH_BOB, start=90)
+    _mark_read(db, with_bob)
+
+    # Newest and unread, so it sits on top carrying the only badge.
+    with_alice = _make_conversation(db, "direct", [owner, cast["alice"]])
+    _add_messages(db, with_alice, people, OWNER_WITH_ALICE, start=8)
+    _mark_read(db, with_alice)
+    _leave_unread(db, with_alice, owner, count=2)
+
+    # A real membership, added by the group's admin.
+    newest = (
+        db.query(func.max(Message.id)).filter(Message.conversation_id == group.id).scalar() or 0
+    )
+    db.add(
+        ConversationMember(
+            conversation_id=group.id, user_id=owner.id, last_read_message_id=newest
+        )
+    )
+    db.flush()
+
+    notice = Message(
+        conversation_id=group.id,
+        sender_id=None,
+        type="system",
+        body=f"{cast['alice'].display_name} added {OWNER_NAME}",
+        created_at=_now_minus(6),
+    )
+    db.add(notice)
+    db.flush()
+    group.last_message_at = notice.created_at
+    return owner
+
+
+def seed(db: Session) -> None:
+    """Safe to run on every boot: each part is a no-op once it exists."""
+    cast = _ensure_cast(db)
+    group = _ensure_demo_chats(db, cast)
+    _ensure_owner(db, cast, group)
+    db.commit()

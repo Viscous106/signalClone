@@ -26,9 +26,9 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:3000"]
     seed_on_boot: bool = True
-    # Give a newly registered account contacts, two threads and a place in the
-    # group, so the app is usable the moment someone signs up.
-    starter_chats: bool = True
+    # Introduce a newly registered account to the seeded demo users as
+    # contacts. Conversations are never created for them.
+    demo_contacts: bool = True
 
 
 @lru_cache

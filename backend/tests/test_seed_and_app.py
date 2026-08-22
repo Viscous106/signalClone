@@ -4,13 +4,16 @@ from app.seed import seed
 
 class TestSeed:
     def test_populates_a_usable_app(self, db):
+        from app.seed import OWNER_PHONE
+
         seed(db)
-        users = db.query(User).all()
-        assert len(users) == 5
+        # Five demo users plus the designated owner.
+        assert db.query(User).count() == 6
+        assert db.query(User).filter_by(phone=OWNER_PHONE).count() == 1
         # Sidebar is useless without both kinds of conversation.
-        assert db.query(Conversation).filter_by(type="direct").count() == 2
+        assert db.query(Conversation).filter_by(type="direct").count() == 4
         assert db.query(Conversation).filter_by(type="group").count() == 1
-        assert db.query(Message).count() >= 15
+        assert db.query(Message).count() >= 20
 
     def test_is_idempotent(self, db):
         """Runs on every boot, so a second run must not duplicate anything."""

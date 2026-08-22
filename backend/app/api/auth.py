@@ -53,8 +53,8 @@ def verify(payload: AuthVerifyRequest, db: DbSession, response: Response) -> Use
         )
         db.add(user)
         db.flush()
-        if get_settings().starter_chats:
-            onboarding.give_starter_chats(db, user)
+        if get_settings().demo_contacts:
+            onboarding.add_demo_contacts(db, user)
 
     # Signing in is the freshest possible presence signal. A returning user's
     # display_name is deliberately left alone: only PATCH /users/me renames.
