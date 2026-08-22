@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GroupInfoModal } from "./GroupInfoModal";
+import { useToasts } from "@/store/toasts";
 import type { Conversation, UserBrief } from "@/lib/types";
 
 const replace = vi.fn();
@@ -72,6 +73,7 @@ describe("GroupInfoModal", () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
     replace.mockClear();
+    useToasts.setState({ items: [] });
   });
 
   it("lists the members and marks the admin", async () => {
@@ -156,6 +158,36 @@ describe("GroupInfoModal", () => {
 
     await waitFor(() =>
       expect(calls.some((c) => c.method === "PATCH" && c.body && (c.body as {name: string}).name === "Coast")).toBe(true)
+    );
+  });
+
+  it("confirms a rename with a toast", async () => {
+    const user = userEvent.setup();
+    mockApi({ ...AS_ADMIN, "PATCH /api/conversations/7": { ...group, name: "Coast" } });
+    render(<GroupInfoModal conversation={group} meId={1} onClose={vi.fn()} />);
+
+    await user.clear(await screen.findByLabelText(/group name/i));
+    await user.type(screen.getByLabelText(/group name/i), "Coast");
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+
+    await waitFor(() =>
+      expect(useToasts.getState().items.map((t) => t.message)).toContain("Group renamed")
+    );
+  });
+
+  it("says who was removed", async () => {
+    const user = userEvent.setup();
+    mockApi({ ...AS_ADMIN, "DELETE /members/2": [] });
+    render(<GroupInfoModal conversation={group} meId={1} onClose={vi.fn()} />);
+
+    await screen.findByText("Bob Martinez");
+    const bobRow = screen
+      .getAllByTestId("member-row")
+      .find((r) => r.textContent?.includes("Bob Martinez"))!;
+    await user.click(bobRow.querySelector("button")!);
+
+    await waitFor(() =>
+      expect(useToasts.getState().items.map((t) => t.message)).toContain("Removed Bob Martinez")
     );
   });
 

@@ -8,6 +8,7 @@ import { CloseIcon } from "@/components/ui/icons";
 import { ApiError, api } from "@/lib/api";
 import type { Conversation, Member, UserBrief } from "@/lib/types";
 import { useConversations } from "@/store/conversations";
+import { useToasts } from "@/store/toasts";
 
 type Props = {
   conversation: Conversation;
@@ -20,6 +21,7 @@ export function GroupInfoModal({ conversation, meId, onClose }: Props) {
   const upsert = useConversations((s) => s.upsert);
   const drop = useConversations((s) => s.remove);
 
+  const notify = useToasts((s) => s.show);
   const [members, setMembers] = useState<Member[]>([]);
   const [name, setName] = useState(conversation.name ?? "");
   const [adding, setAdding] = useState(false);
@@ -41,7 +43,9 @@ export function GroupInfoModal({ conversation, meId, onClose }: Props) {
     try {
       await action();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "That did not work");
+      const message = err instanceof ApiError ? err.message : "That did not work";
+      setError(message);
+      notify(message, "error");
     } finally {
       setBusy(false);
     }
@@ -49,12 +53,15 @@ export function GroupInfoModal({ conversation, meId, onClose }: Props) {
 
   const removeMember = (userId: number) =>
     run(async () => {
+      const who = members.find((m) => m.user.id === userId)?.user.display_name;
       setMembers(await api.delete<Member[]>(`${path}/members/${userId}`));
+      notify(who ? `Removed ${who}` : "Member removed");
     });
 
   const leave = () =>
     run(async () => {
       await api.delete(`${path}/members/${meId}`);
+      notify("You left the group");
       drop(conversation.id);
       onClose();
       router.replace("/");
@@ -63,6 +70,7 @@ export function GroupInfoModal({ conversation, meId, onClose }: Props) {
   const save = () =>
     run(async () => {
       upsert(await api.patch<Conversation>(path, { name: name.trim() }));
+      notify("Group renamed");
     });
 
   const openAdd = () =>
@@ -75,8 +83,10 @@ export function GroupInfoModal({ conversation, meId, onClose }: Props) {
 
   const add = (userId: number) =>
     run(async () => {
+      const who = candidates.find((c) => c.id === userId)?.display_name;
       setMembers(await api.post<Member[]>(`${path}/members`, { user_ids: [userId] }));
       setCandidates((current) => current.filter((c) => c.id !== userId));
+      notify(who ? `Added ${who}` : "Member added");
     });
 
   return (

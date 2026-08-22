@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   AppearanceSection,
   BackupsSection,
+  LinkedDevicesSection,
   CallsSection,
   ChatsSection,
   DataUsageSection,
@@ -29,6 +30,7 @@ type SectionId =
   | "privacy"
   | "data"
   | "backups"
+  | "devices"
   | "donate";
 
 const NAV: { id: SectionId; label: string; icon: React.ReactNode }[] = [
@@ -40,6 +42,7 @@ const NAV: { id: SectionId; label: string; icon: React.ReactNode }[] = [
   { id: "privacy", label: "Privacy", icon: <LockIcon /> },
   { id: "data", label: "Data usage", icon: <PieIcon /> },
   { id: "backups", label: "Backups", icon: <ClockIcon /> },
+  { id: "devices", label: "Linked devices", icon: <DeviceIcon /> },
   { id: "donate", label: "Donate to Signal", icon: <HeartIcon /> },
 ];
 
@@ -53,6 +56,7 @@ const TITLES: Record<SectionId, string> = {
   privacy: "Privacy",
   data: "Data usage",
   backups: "Backups",
+  devices: "Linked devices",
   donate: "Donate to Signal",
 };
 
@@ -142,6 +146,7 @@ export default function SettingsPage() {
           {section === "privacy" && <PrivacySection />}
           {section === "data" && <DataUsageSection />}
           {section === "backups" && <BackupsSection />}
+          {section === "devices" && <LinkedDevicesSection />}
           {section === "donate" && <DonateSection user={user} />}
         </div>
       </div>
@@ -222,6 +227,16 @@ function HeartIcon() {
     </svg>
   );
 }
+function DeviceIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className={S} {...stroke}>
+      <rect x="2" y="5" width="13" height="10" rx="1.5" />
+      <path d="M4.5 19h8" strokeLinecap="round" />
+      <rect x="17" y="9" width="5" height="10" rx="1.5" />
+    </svg>
+  );
+}
+
 function ExitIcon() {
   return (
     <svg viewBox="0 0 24 24" className={S} {...stroke}>

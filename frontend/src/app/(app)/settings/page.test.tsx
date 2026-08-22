@@ -44,6 +44,7 @@ describe("SettingsPage", () => {
       "Privacy",
       "Data usage",
       "Backups",
+      "Linked devices",
       "Donate to Signal",
     ];
     for (const label of labels) {
@@ -98,6 +99,16 @@ describe("SettingsPage", () => {
     await user.click(screen.getByRole("button", { name: "Notifications" }));
 
     expect(screen.getByRole("checkbox", { name: /enable notifications/i })).toBeDisabled();
+  });
+
+  it("carries the Linked devices placeholder the brief asks for", async () => {
+    const user = userEvent.setup();
+    render(<SettingsPage />);
+
+    await user.click(screen.getByRole("button", { name: "Linked devices" }));
+
+    expect(screen.getByRole("heading", { name: "Linked devices" })).toBeInTheDocument();
+    expect(screen.getByText(/link a new device/i)).toBeInTheDocument();
   });
 
   it("logs out and returns to the login screen", async () => {

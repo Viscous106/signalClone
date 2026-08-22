@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { api } from "@/lib/api";
+import { useToasts } from "@/store/toasts";
 import type { Message, MessageStatus } from "@/lib/types";
 
 export type MessagesState = {
@@ -92,6 +93,7 @@ export const useMessages = create<MessagesState>((set, get) => ({
           ),
         },
       }));
+      useToasts.getState().show("Message not sent", "error");
     }
   },
 

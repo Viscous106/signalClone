@@ -16,49 +16,49 @@ Goal: **look, feel and behave like Signal.** Encryption is mocked, not real.
 ## Milestones
 
 ### M1 — Auth / Onboarding
-- [ ] Register with phone number or username
-- [ ] Mocked OTP verification (fixed code)
-- [ ] Display name + profile avatar
-- [ ] Login / logout, session persistence
+- [x] Register with phone number or username
+- [x] Mocked OTP verification (fixed code)
+- [x] Display name + profile avatar
+- [x] Login / logout, session persistence
 
 ### M2 — Contacts & Conversation List
-- [ ] Left-hand conversation list, sorted by most recent activity
-- [ ] Search conversations and contacts
-- [ ] Add a new contact
-- [ ] Unread badge + last-message preview
-- [ ] Online / last-seen indicators (mocked)
+- [x] Left-hand conversation list, sorted by most recent activity
+- [x] Search conversations and contacts
+- [x] Add a new contact
+- [x] Unread badge + last-message preview
+- [x] Online / last-seen indicators (mocked)
 
 ### M3 — 1:1 Messaging
-- [ ] Send/receive text in real time (WebSocket)
-- [ ] Message timestamps
-- [ ] Delivery / read receipts (single / double check)
-- [ ] Typing indicators
-- [ ] Status: sending → sent → delivered → read
-- [ ] All messages persisted in DB
+- [x] Send/receive text in real time (WebSocket)
+- [x] Message timestamps
+- [x] Delivery / read receipts (single / double check)
+- [x] Typing indicators
+- [x] Status: sending → sent → delivered → read
+- [x] All messages persisted in DB
 
 ### M4 — Group Messaging
-- [ ] Create group (name + members)
-- [ ] Send/receive group messages
-- [ ] View group members
-- [ ] Add / remove members (admin controls)
-- [ ] Group data + messages persisted
+- [x] Create group (name + members)
+- [x] Send/receive group messages
+- [x] View group members
+- [x] Add / remove members (admin controls)
+- [x] Group data + messages persisted
 
 ### M5 — Signal Experience (UI/UX parity)
-- [ ] Layout: conversation list + chat pane
-- [ ] Message bubbles and threading
-- [ ] Forms, modals, search, filters
-- [ ] Notifications / toasts
-- [ ] Settings placeholders (privacy, notifications, appearance)
+- [x] Layout: conversation list + chat pane
+- [x] Message bubbles and threading
+- [x] Forms, modals, search, filters
+- [x] Notifications / toasts
+- [x] Settings placeholders (privacy, notifications, appearance)
 
 ### M6 — Placeholders ("Coming Soon" is enough)
-- [ ] Voice / video calls
-- [ ] Stories
-- [ ] Linked devices
-- [ ] Real end-to-end encryption
+- [x] Voice / video calls
+- [x] Stories
+- [x] Linked devices
+- [x] Real end-to-end encryption
 
 ### M7 — Ship
-- [ ] Seed data: multiple users, conversations, messages
-- [ ] README: setup, stack, architecture, DB schema, API overview, assumptions
+- [x] Seed data: multiple users, conversations, messages
+- [x] README: setup, stack, architecture, DB schema, API overview, assumptions
 - [ ] Public GitHub repo with `frontend/` and `backend/`
 - [ ] Deployed live demo (Vercel / Render / Railway / etc.)
 - [ ] Submit repo link + demo link

@@ -307,6 +307,24 @@ export function BackupsSection() {
   );
 }
 
+export function LinkedDevicesSection() {
+  return (
+    <>
+      <Hint>
+        Signal links a desktop app to your phone. This build is the web app, so
+        there is nothing to link.
+      </Hint>
+      <Divider />
+      <Row
+        title="Link a new device"
+        description="Scan a QR code from your phone to link it."
+        control={<Pill disabled>Coming soon</Pill>}
+      />
+      <Row title="This device" description="Web · active now" />
+    </>
+  );
+}
+
 export function DonateSection({ user }: { user: User }) {
   return (
     <div className="flex flex-col items-center text-center">

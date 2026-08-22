@@ -4,7 +4,9 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { NavRail } from "@/components/rail/NavRail";
+import { Toaster } from "@/components/ui/Toaster";
 import { useRealtime } from "@/hooks/useRealtime";
+import { useUnreadTitle } from "@/hooks/useUnreadTitle";
 import { usePreferences } from "@/store/preferences";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { loadCurrentUser } from "@/lib/session";
@@ -18,6 +20,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // One socket for the whole app, opened as soon as we know who we are.
   useRealtime(user?.id);
+  useUnreadTitle();
 
   // Theme lives in localStorage, which the server cannot read.
   const hydratePreferences = usePreferences((s) => s.hydrate);
@@ -55,6 +58,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <NavRail user={user} />
       {chrome && <Sidebar meId={user.id} activeId={activeId} />}
       <section className="min-w-0 flex-1">{children}</section>
+      <Toaster />
     </div>
   );
 }
