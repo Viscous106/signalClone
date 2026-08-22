@@ -1,0 +1,45 @@
+/**
+ * Thin fetch wrapper. Requests go to relative `/api/...` and Next rewrites them
+ * to the FastAPI server (see next.config.ts), so everything is same-origin and
+ * the session cookie needs no CORS dance.
+ */
+
+export class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    message: string
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const response = await fetch(path, {
+    method,
+    credentials: "include",
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    let detail = `Request failed (${response.status})`;
+    try {
+      const payload = await response.json();
+      // FastAPI uses `detail`; validation errors make it a list of objects.
+      if (typeof payload?.detail === "string") detail = payload.detail;
+      else if (Array.isArray(payload?.detail)) detail = payload.detail[0]?.msg ?? detail;
+    } catch {
+      // Non-JSON error body — keep the generic message.
+    }
+    throw new ApiError(response.status, detail);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export const api = {
+  get: <T>(path: string) => request<T>("GET", path),
+  post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
+  patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
+};

@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+/* Class-based dark mode: Signal Desktop defaults to dark, so `.dark` sits on
+   <html> and the user can opt out. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Signal's real design tokens — see docs/SIGNAL-UI-REFERENCE.md */
+:root {
+  --surface-primary: #fafafa;
+  --surface-secondary: #f5f5f5;
+  --surface-message-incoming: #ebebeb;
+  --surface-message-outgoing: #2267f5;
+  --label-primary: rgb(0 0 0 / 0.9);
+  --label-secondary: rgb(0 0 0 / 0.6);
+  --label-on-color: rgb(255 255 255 / 0.9);
+  --border-primary: rgb(0 0 0 / 0.06);
+  --accent-fill: #4655ff;
+  --brand: #3b45fd;
+}
+
+.dark {
+  --surface-primary: #191919;
+  --surface-secondary: #1e1e1e;
+  --surface-message-incoming: #323232;
+  --surface-message-outgoing: #2267f5;
+  --label-primary: rgb(255 255 255 / 0.9);
+  --label-secondary: rgb(255 255 255 / 0.6);
+  --label-on-color: rgb(255 255 255 / 0.9);
+  --border-primary: rgb(255 255 255 / 0.06);
+  --accent-fill: #5563ff;
+}
+
+@theme inline {
+  --color-surface: var(--surface-primary);
+  --color-surface-2: var(--surface-secondary);
+  --color-incoming: var(--surface-message-incoming);
+  --color-outgoing: var(--surface-message-outgoing);
+  --color-label: var(--label-primary);
+  --color-label-2: var(--label-secondary);
+  --color-label-oncolor: var(--label-on-color);
+  --color-edge: var(--border-primary);
+  --color-accent: var(--accent-fill);
+  --color-brand: var(--brand);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Signal's layout metrics */
+  --spacing-rail: 80px;
+  --spacing-row: 72px;
+  --spacing-header: 52px;
+
+  /* Signal's type scale */
+  --text-title1: 26px;
+  --text-title1--line-height: 32px;
+  --text-title1--letter-spacing: -0.56px;
+  --text-title2: 20px;
+  --text-title2--line-height: 26px;
+  --text-title2--letter-spacing: -0.34px;
+  --text-body1: 14px;
+  --text-body1--line-height: 20px;
+  --text-body1--letter-spacing: -0.08px;
+  --text-body2: 13px;
+  --text-body2--line-height: 18px;
+  --text-body2--letter-spacing: -0.03px;
+  --text-subtitle: 12px;
+  --text-subtitle--line-height: 16px;
+  --text-caption: 11px;
+  --text-caption--line-height: 14px;
+  --text-caption--letter-spacing: 0.06px;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--surface-primary);
+  color: var(--label-primary);
+  -webkit-font-smoothing: antialiased;
+}

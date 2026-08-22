@@ -53,5 +53,13 @@ Phases 1→3 are the critical path. Phase 4 reuses the Phase 3 message pipeline 
 - README with setup, architecture, schema, API, assumptions (a graded deliverable).
 - SQLite needs a mounted disk or data dies on redeploy. Seed on boot if the DB is empty.
 
+## Testing — TDD
+
+Tests come before implementation in every phase. Red, then green.
+
+- **Backend**: pytest. In-memory SQLite per test via the `db` fixture; `client` fixture overrides `get_db` so API tests never touch the real file. Run `.venv/bin/python -m pytest`.
+- **Frontend**: vitest + Testing Library, jsdom. Run `pnpm test`.
+- Realtime behaviour that tests can't reach (two live sockets, tick transitions) still gets a manual two-browser check at the end of each phase.
+
 ## Deliberately out of scope
-Real E2E crypto · Alembic migrations · unit test suite (manual two-browser verification instead) · file uploads unless bonus time remains.
+Real E2E crypto · Alembic migrations (single-dev SQLite, `create_all` is honest) · file uploads unless bonus time remains.
