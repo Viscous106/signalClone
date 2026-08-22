@@ -14,8 +14,8 @@ import {
   GeneralSection,
   NotificationsSection,
   PrivacySection,
-  ProfileSection,
 } from "@/components/settings/sections";
+import { ProfileEditor } from "@/components/settings/ProfileEditor";
 import { Avatar } from "@/components/ui/Avatar";
 import { api } from "@/lib/api";
 import { useSession } from "@/store/session";
@@ -137,7 +137,7 @@ export default function SettingsPage() {
         <h2 className="py-3 text-center text-body2 font-semibold text-label">{TITLES[section]}</h2>
         {/* A centred column, roughly the width the desktop app uses. */}
         <div className="mx-auto max-w-[600px] px-6 pb-16">
-          {section === "profile" && <ProfileSection user={user} />}
+          {section === "profile" && <ProfileEditor user={user} />}
           {section === "general" && <GeneralSection user={user} />}
           {section === "appearance" && <AppearanceSection />}
           {section === "chats" && <ChatsSection />}

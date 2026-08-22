@@ -14,32 +14,6 @@ import { Check, Divider, Hint, Pill, Row, SectionHeader, Select } from "./primit
  * receipts / Typing indicators.
  */
 
-export function ProfileSection({ user }: { user: User }) {
-  return (
-    <>
-      <div className="flex flex-col items-center pb-6">
-        <Avatar
-          name={user.display_name}
-          color={user.avatar_color}
-          fg={user.avatar_fg}
-          url={user.avatar_url}
-          size={80}
-        />
-        <Pill disabled>Edit photo</Pill>
-      </div>
-      <Row title={user.display_name} control={<Pill disabled>Edit</Pill>} />
-      <Row title="About" description={user.about || "Write a few words about yourself"} />
-      <Hint>Your profile and changes to it will be visible to people you message, contacts and groups.</Hint>
-      <Divider />
-      <Row title="Username" control={<Pill disabled>Set up</Pill>} />
-      <Hint>
-        People can now message you using your optional username so you don&apos;t have to give out
-        your phone number.
-      </Hint>
-    </>
-  );
-}
-
 export function GeneralSection({ user }: { user: User }) {
   return (
     <>

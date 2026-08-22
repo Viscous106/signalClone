@@ -105,6 +105,30 @@ describe("ConversationList", () => {
     expect(screen.getByText(/recent chats will appear here/i)).toBeInTheDocument();
   });
 
+  it("can show only what is unread", () => {
+    render(<ConversationList conversations={list} meId={ME} activeId={null} query="" unreadOnly />);
+    const titles = screen.getAllByTestId("conversation-title").map((n) => n.textContent);
+    // Only the group carries a badge in this fixture.
+    expect(titles).toEqual(["Weekend Trip"]);
+  });
+
+  it("says you are caught up when nothing is unread", () => {
+    render(
+      <ConversationList conversations={[withBob]} meId={ME} activeId={null} query="" unreadOnly />
+    );
+    expect(screen.getByText(/no unread chats/i)).toBeInTheDocument();
+  });
+
+  it("combines the filter with the search term", () => {
+    render(
+      <ConversationList conversations={list} meId={ME} activeId={null} query="bob" unreadOnly />
+    );
+    // "bob" matches his direct chat *and* the group he is a member of, but his
+    // direct chat has nothing unread, so only the group survives both.
+    const titles = screen.getAllByTestId("conversation-title").map((n) => n.textContent);
+    expect(titles).toEqual(["Weekend Trip"]);
+  });
+
   it("marks the open conversation as current for assistive tech", () => {
     render(<ConversationList conversations={list} meId={ME} activeId={1} query="" />);
     const current = screen.getByRole("link", { current: "page" });

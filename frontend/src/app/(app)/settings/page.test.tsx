@@ -55,8 +55,9 @@ describe("SettingsPage", () => {
   it("opens on the profile, with the signed-in identity", () => {
     render(<SettingsPage />);
     expect(screen.getByRole("heading", { name: "Profile" })).toBeInTheDocument();
-    expect(screen.getAllByText("Yash Virulkar").length).toBeGreaterThan(0);
-    expect(screen.getByText("+919834758028")).toBeInTheDocument();
+    // The nav card and the editor both show the identity.
+    expect(screen.getAllByText("+919834758028").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText(/your name/i)).toHaveValue("Yash Virulkar");
   });
 
   it("switches section and retitles the pane", async () => {

@@ -17,6 +17,7 @@ export function Sidebar({ meId, activeId }: { meId: number; activeId: number | n
   const { items, loading, load } = useConversations();
   const [query, setQuery] = useState("");
   const [view, setView] = useState<View>("chats");
+  const [unreadOnly, setUnreadOnly] = useState(false);
 
   useEffect(() => {
     load();
@@ -43,9 +44,26 @@ export function Sidebar({ meId, activeId }: { meId: number; activeId: number | n
               >
                 <PencilIcon />
               </button>
-              <ListMenu />
+              <ListMenu
+                unreadOnly={unreadOnly}
+                onToggleUnread={() => setUnreadOnly((v) => !v)}
+              />
             </div>
           </header>
+
+          {unreadOnly && (
+            <div className="px-3 pb-2">
+              <button
+                onClick={() => setUnreadOnly(false)}
+                className="flex w-full items-center justify-between rounded-lg bg-surface px-3 py-1.5 text-body2 text-label"
+              >
+                Unread only
+                <span aria-hidden="true" className="text-label-2">
+                  ×
+                </span>
+              </button>
+            </div>
+          )}
 
           <div className="px-3 pb-2">
             <div className="flex items-center gap-2 rounded-lg bg-surface px-3 py-1.5">

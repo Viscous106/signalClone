@@ -12,22 +12,32 @@ type Props = {
   meId: number;
   activeId: number | null;
   query: string;
+  /** Show only conversations with something unread. */
+  unreadOnly?: boolean;
 };
 
-export function ConversationList({ conversations, meId, activeId, query }: Props) {
-  const visible = conversations.filter((c) => matchesSearch(c, meId, query));
+export function ConversationList({
+  conversations,
+  meId,
+  activeId,
+  query,
+  unreadOnly = false,
+}: Props) {
+  const visible = conversations
+    .filter((c) => matchesSearch(c, meId, query))
+    .filter((c) => !unreadOnly || c.unread_count > 0);
 
   if (visible.length === 0) {
+    const empty = unreadOnly
+      ? { title: "No unread chats", body: "You are all caught up." }
+      : query.trim()
+        ? { title: "No results", body: `Nothing matched "${query.trim()}"` }
+        : { title: "No chats", body: "Recent chats will appear here." };
+
     return (
       <div className="px-6 py-16 text-center">
-        <p className="text-body1 font-semibold text-label">
-          {query.trim() ? "No results" : "No chats"}
-        </p>
-        <p className="mt-1 text-body2 text-label-2">
-          {query.trim()
-            ? `Nothing matched "${query.trim()}"`
-            : "Recent chats will appear here."}
-        </p>
+        <p className="text-body1 font-semibold text-label">{empty.title}</p>
+        <p className="mt-1 text-body2 text-label-2">{empty.body}</p>
       </div>
     );
   }
