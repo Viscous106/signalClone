@@ -2,6 +2,9 @@
 
 Locked decisions: **FastAPI** backend · **Next.js + Tailwind** (custom Signal tokens) · **SQLite** · **WebSockets**. Hosting decided at Phase 6.
 
+Visual target per screen: [UI-SPEC.md](./UI-SPEC.md), from screenshots of the
+real apps. It adds no scope — it restyles screens already listed below.
+
 Rule: REST writes, WebSocket fanout. Every message is persisted by an HTTP call, then broadcast. Never trust the socket as the source of truth.
 
 ## Order of work
@@ -60,6 +63,23 @@ Tests come before implementation in every phase. Red, then green.
 - **Backend**: pytest. In-memory SQLite per test via the `db` fixture; `client` fixture overrides `get_db` so API tests never touch the real file. Run `.venv/bin/python -m pytest`.
 - **Frontend**: vitest + Testing Library, jsdom. Run `pnpm test`.
 - Realtime behaviour that tests can't reach (two live sockets, tick transitions) still gets a manual two-browser check at the end of each phase.
+
+## UI refinements from the real app
+
+Fixes to screens already in scope, logged against the phase that owns them.
+Detail and measurements in [UI-SPEC.md](./UI-SPEC.md).
+
+| Phase | Refinement |
+|---|---|
+| 1 | Onboarding left-aligned with a bottom-right "Next"; OTP as six boxes grouped 3–3; "Wrong number?" link |
+| 2 | Avatars to Signal's pastel-fill/saturated-initial pairs (A100–A210) — store the token, not a hex |
+| 2 | List pane 340px → 320px |
+| 2 | New chat becomes a left-pane panel with a back chevron, not a centred modal |
+| 2 | Empty states in pairs: "No chats" in the list, Signal logo + "Welcome to Signal" + nonprofit footer in the chat pane |
+| 2 | Rail gains the hamburger at top; settings gear pinned bottom |
+| 5 | Settings becomes rail + 320px nav + ~730px detail column, rail still visible |
+| 5 | Privacy page carries real Read receipts and Typing indicators toggles — both are features we actually built |
+| 5 | Shared primitives: grey/accent/destructive pills, 14px checkbox, select with chevron, hairline section dividers |
 
 ## Deliberately out of scope
 Real E2E crypto · Alembic migrations (single-dev SQLite, `create_all` is honest) · file uploads unless bonus time remains.

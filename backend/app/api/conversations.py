@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.core.deps import CurrentUser, DbSession
 from app.db.models import Conversation, ConversationMember, User, pick_avatar_color
@@ -8,6 +8,8 @@ from app.schemas.conversation import (
     MarkReadRequest,
 )
 from app.services import conversations as service
+from app.services import receipts as receipt_service
+from app.ws.manager import broadcast
 
 router = APIRouter(prefix="/api/conversations", tags=["conversations"])
 
@@ -76,10 +78,33 @@ def get_conversation(conversation_id: int, user: CurrentUser, db: DbSession) -> 
 
 @router.post("/{conversation_id}/read")
 def mark_read(
-    conversation_id: int, payload: MarkReadRequest, user: CurrentUser, db: DbSession
+    conversation_id: int,
+    payload: MarkReadRequest,
+    user: CurrentUser,
+    db: DbSession,
+    request: Request,
 ) -> dict[str, int]:
     membership = _require_membership(db, conversation_id, user)
     # Never move the cursor backwards: an older tab must not resurrect badges.
     membership.last_read_message_id = max(membership.last_read_message_id, payload.message_id)
     db.commit()
+
+    # Tell each sender their message has been read, so their ticks fill in.
+    changed = receipt_service.mark_read(db, user.id, conversation_id, payload.message_id)
+    manager = request.app.state.ws_manager
+    for message in changed:
+        if message.sender_id is None:
+            continue
+        broadcast(
+            manager,
+            [message.sender_id],
+            {
+                "type": "message.status",
+                "payload": {
+                    "message_id": message.id,
+                    "conversation_id": conversation_id,
+                    "status": receipt_service.READ,
+                },
+            },
+        )
     return {"last_read_message_id": membership.last_read_message_id}

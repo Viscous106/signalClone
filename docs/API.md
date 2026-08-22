@@ -37,13 +37,15 @@ Base `/api`. JSON in, JSON out. Auth via JWT in an httpOnly cookie; `401` when a
 ## Messages
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/conversations/{id}/messages?before={id}&limit=50` | newest first, cursor paginated for infinite scroll |
-| POST | `/conversations/{id}/messages` | `{body, reply_to_id?}` → persists, then broadcasts `message.new` |
+| GET | `/conversations/{id}/messages?before={id}&limit=50` | newest first, cursor paginated for infinite scroll. Each row carries `status` (`sent`/`delivered`/`read`) on messages **you** sent, `null` on the rest |
+| POST | `/conversations/{id}/messages` | `{body, reply_to_id?, client_id?}` → persists, then broadcasts `message.new`. `client_id` is echoed back untouched so the sender can match its optimistic bubble |
 | POST | `/conversations/{id}/read` | `{message_id}` — advances `last_read_message_id`, broadcasts `message.status` |
 | DELETE | `/messages/{id}` | soft delete, sender only |
 
 ## WebSocket
-`GET /ws?token={jwt}` — one socket per tab. Event contract is in [ARCHITECTURE.md](./ARCHITECTURE.md#realtime).
+`GET /ws` — one socket per tab, authenticated by the session cookie (no token
+in the query string). Event contract in
+[ARCHITECTURE.md](./ARCHITECTURE.md#realtime).
 
 ## Notes on the list endpoint
 

@@ -1,7 +1,7 @@
 # Signal Clone — Milestone Reference
 
 Secure Messaging Platform (SDE Fullstack Assignment). Single source of truth for scope.
-Build order in [PLAN.md](./PLAN.md) · design in [ARCHITECTURE.md](./ARCHITECTURE.md) · [SCHEMA.md](./SCHEMA.md) · [API.md](./API.md) · visual target in [SIGNAL-UI-REFERENCE.md](./SIGNAL-UI-REFERENCE.md).
+Build order in [PLAN.md](./PLAN.md) · design in [ARCHITECTURE.md](./ARCHITECTURE.md) · [SCHEMA.md](./SCHEMA.md) · [API.md](./API.md) · visual target in [SIGNAL-UI-REFERENCE.md](./SIGNAL-UI-REFERENCE.md) + [UI-SPEC.md](./UI-SPEC.md).
 Goal: **look, feel and behave like Signal.** Encryption is mocked, not real.
 
 ## Stack (fixed)

@@ -27,6 +27,7 @@ Signal Desktop is a 80px icon rail + conversation list + chat pane.
 |---|---|
 | Nav rail width | `80px` |
 | Conversation list row height | `72px` |
+| Conversation list pane width | `320px` (measured; resizable in the real app) |
 | List horizontal padding | `11px` |
 | Header height | `52px` |
 | Composer min-height | `42px`, `10px` vertical padding |
@@ -69,7 +70,15 @@ Legacy values still in their SCSS — use only if something looks off: ultramari
 
 Outgoing bubble text is white @ 90%, never pure white.
 
-**Avatar colors** — Signal assigns each contact a deterministic bg/fg pair from a fixed palette, used behind initials when there's no photo. Ours: hash the user id into this list.
+**Avatar colors** — Signal assigns each contact a deterministic **pair**: a pale
+fill with the initials in a strong version of the same hue. Never white
+initials on a saturated circle. Full A100–A210 table in
+[UI-SPEC.md](./UI-SPEC.md#avatars--the-most-visible-fix); e.g. A180 is
+`#FEF5D0` fill with `#836B01` initials.
+
+The saturated set below (`$color-blue`, `$color-crimson`, …) is Signal's
+*conversation* flat-colour palette — chat wallpapers and group colours, **not**
+avatars. Easy to mix up, and mixing them up is visible immediately:
 `#336BA3` blue · `#6F6A58` burlap · `#CF163E` crimson · `#3B7845` forest · `#6058CA` indigo · `#AA377A` plum · `#71717F` steel · `#8F616A` taupe · `#077D92` teal · `#C73F0A` vermilion · `#9932C8` violet · `#1D8663` wintergreen
 
 ## Typography
@@ -103,6 +112,12 @@ Confirmed against Signal's own description:
 | read | two **filled** ✓✓ |
 
 "Filled" is the real distinction, not a color change — Signal fills the checks in rather than turning them blue. Read receipts are a mutual opt-in: if either side disables them, delivered is as far as it goes. Worth a settings toggle in M5 for authenticity.
+
+## Screenshot-derived detail
+
+Per-screen layout — headers, empty states, the new-chat panel, settings,
+dialogs, onboarding, and the mobile shell — is in [UI-SPEC.md](./UI-SPEC.md),
+taken from screenshots of the native desktop and Android apps.
 
 ## Reference sources
 - [signal.org](https://signal.org/) — marketing site; nav, footer, download links

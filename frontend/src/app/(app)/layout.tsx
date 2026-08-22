@@ -4,6 +4,7 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { NavRail } from "@/components/rail/NavRail";
+import { useRealtime } from "@/hooks/useRealtime";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { loadCurrentUser } from "@/lib/session";
 import { useSession } from "@/store/session";
@@ -13,6 +14,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const params = useParams<{ id?: string }>();
   const { user, setUser } = useSession();
+
+  // One socket for the whole app, opened as soon as we know who we are.
+  useRealtime(user?.id);
 
   useEffect(() => {
     // The cookie survives reloads but the store does not, so rehydrate the

@@ -34,19 +34,31 @@ def db(engine):
 
 
 @pytest.fixture()
-def client(engine):
-    from fastapi.testclient import TestClient
+def app(engine):
+    """One app instance per test, wired to the in-memory database.
 
+    Shared by every client in a test so that realtime state (the WebSocket
+    connection manager, which lives on app.state) is common between them.
+    """
     from app.db.session import get_db
     from app.main import create_app
 
-    app = create_app(init_db=False)
+    application = create_app(init_db=False)
 
     def _override():
         with Session(engine, future=True) as session:
             yield session
 
-    app.dependency_overrides[get_db] = _override
+    application.dependency_overrides[get_db] = _override
+    # The WebSocket route uses this factory, not the HTTP dependency.
+    application.state.session_factory = lambda: Session(engine, future=True)
+    return application
+
+
+@pytest.fixture()
+def client(app):
+    from fastapi.testclient import TestClient
+
     with TestClient(app) as c:
         yield c
 

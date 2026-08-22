@@ -1,3 +1,5 @@
+export type MessageStatus = "sending" | "sent" | "delivered" | "read" | "failed" | null;
+
 export type User = {
   id: number;
   phone: string;
@@ -34,6 +36,12 @@ export type Message = {
   edited_at?: string | null;
   deleted_at?: string | null;
   sender?: UserBrief | null;
+  /** Tick state; only present on messages I sent. */
+  status?: MessageStatus;
+  /** Set on an optimistic bubble until the server confirms it. */
+  local_id?: string;
+  /** Echoed back by the server so we can match the optimistic bubble. */
+  client_id?: string | null;
 };
 
 export type Conversation = {

@@ -3,7 +3,7 @@
 ```
 Next.js (Vercel-ready)          FastAPI + uvicorn            SQLite
   ├── fetch  ──── REST /api ────────►  routers  ──► SQLAlchemy ──► signal.db
-  └── WebSocket ── /ws?token= ──────►  ConnectionManager
+  └── WebSocket ── /ws (cookie) ────►  ConnectionManager
 ```
 
 One HTTP API for reads/writes, one WebSocket for push. The socket carries no writes except typing indicators.
@@ -37,7 +37,23 @@ frontend/
 
 ## Realtime
 
-Single socket per browser tab, authenticated by the JWT on the query string. `ConnectionManager` holds `dict[user_id, set[WebSocket]]` — in-process only, which is correct for one uvicorn worker. Fanout resolves conversation members, then sends to every socket each member has open.
+Single socket per browser tab, authenticated by the **session cookie** — not a
+token in the query string, which would leak the JWT into logs and history.
+Cookies ignore port, so `:3000 → :8000` works in development; a cross-domain
+deployment needs the API on a sibling subdomain.
+
+`ConnectionManager` lives on `app.state` (not a module global, so tests get a
+fresh registry) and holds `dict[user_id, set[WebSocket]]` — one user can have
+several tabs. Fanout resolves conversation members, then sends to every socket
+each member has open.
+
+The socket route opens a **short database session per operation**, never one for
+the life of the connection: a socket can stay open for hours, and holding a
+pooled connection that long starves everything else.
+
+Broadcasts are issued from synchronous endpoints via `anyio.from_thread.run`,
+which hops back onto the event loop. Keeping the endpoints synchronous means
+blocking SQLAlchemy calls never sit on the loop.
 
 **Server → client**
 
@@ -55,10 +71,27 @@ Reconnect: exponential backoff to 10s max. On reconnect the client refetches the
 
 ## Message send path
 
-1. Client renders the bubble immediately with a temp id, status `sending`.
-2. `POST /conversations/{id}/messages` persists it and returns the real row.
-3. Server broadcasts `message.new` to all members including the sender.
-4. Sender swaps the temp bubble for the real one by temp id; a failed POST flips it to `failed` with a retry affordance.
+1. Client draws the bubble immediately with a generated `client_id`, status `sending`.
+2. `POST /conversations/{id}/messages` persists it and returns the stored row,
+   echoing `client_id` back.
+3. Server marks it delivered for every recipient who currently has a socket
+   open, then broadcasts `message.new` to all members — the sender included, so
+   their other tabs stay in step.
+4. The sender matches the confirmation to its optimistic bubble **by
+   `client_id`**, an exact match rather than guessing from body text and
+   timestamps. A failed POST flips the bubble to `failed`.
+
+Recipients who were offline get their receipts on reconnect: the socket
+handler delivers the backlog and notifies each original sender, so ticks catch
+up rather than being stuck.
+
+## Message status
+
+Derived from `message_receipts`, never cached on the message, so a reload shows
+the truth. A message's status is the **weakest** state across everyone else in
+the conversation — one unread recipient keeps a group message on outlined
+double checks. `status` is `null` on messages you received: ticks belong to the
+sender.
 
 ## Theme tokens
 

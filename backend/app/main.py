@@ -4,6 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import auth, contacts, conversations, messages, users
+from app.ws import routes as ws_routes
+from app.ws.manager import ConnectionManager
 from app.core.config import get_settings
 from app.db.models import Base
 from app.db.session import SessionLocal, engine
@@ -30,6 +32,12 @@ def create_app(init_db: bool = True) -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name, lifespan=lifespan if init_db else None)
 
+    # One registry per app instance, so tests never share socket state.
+    app.state.ws_manager = ConnectionManager()
+    # The WebSocket route opens short sessions of its own rather than holding
+    # one for the life of the connection. Tests point this at their engine.
+    app.state.session_factory = SessionLocal
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -43,6 +51,7 @@ def create_app(init_db: bool = True) -> FastAPI:
     app.include_router(contacts.router)
     app.include_router(conversations.router)
     app.include_router(messages.router)
+    app.include_router(ws_routes.router)
 
     @app.get("/api/health")
     def health() -> dict[str, str]:
