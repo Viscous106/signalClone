@@ -7,6 +7,7 @@ from app.core.deps import DbSession
 from app.core.security import SESSION_COOKIE, create_access_token, verify_otp
 from app.db.models import User, pick_avatar_token
 from app.schemas.auth import AuthStartRequest, AuthStartResponse, AuthVerifyRequest
+from app.services import onboarding
 from app.schemas.user import UserOut
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -51,6 +52,9 @@ def verify(payload: AuthVerifyRequest, db: DbSession, response: Response) -> Use
             avatar_token=pick_avatar_token(payload.phone),
         )
         db.add(user)
+        db.flush()
+        if get_settings().starter_chats:
+            onboarding.give_starter_chats(db, user)
 
     # Signing in is the freshest possible presence signal. A returning user's
     # display_name is deliberately left alone: only PATCH /users/me renames.

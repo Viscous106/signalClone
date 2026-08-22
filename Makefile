@@ -26,6 +26,16 @@ setup: ## Install backend + frontend dependencies
 
 run: ## Run backend and frontend together (Ctrl-C stops both)
 	@test -x $(PY) || { echo "No venv. Run 'make setup' first."; exit 1; }
+	@busy=""; \
+		ss -tln 2>/dev/null | grep -q ':8000 ' && busy="$$busy :8000"; \
+		ss -tln 2>/dev/null | grep -q ':3000 ' && busy="$$busy :3000"; \
+		if [ -n "$$busy" ]; then \
+			echo "Refusing: already serving on$$busy."; \
+			echo "A leftover server would answer requests with stale code while this"; \
+			echo "one silently fails to bind. Stop it first:"; \
+			echo "    pkill -f 'uvicorn app.main:app'; pkill -f 'next dev'"; \
+			exit 1; \
+		fi
 	@echo "api -> http://localhost:8000/docs"
 	@echo "web -> http://localhost:3000"
 	@trap 'trap - INT TERM EXIT; kill 0' INT TERM EXIT; \

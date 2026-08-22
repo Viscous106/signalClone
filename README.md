@@ -18,9 +18,15 @@ make run       # api on :8000, web on :3000
 Then open **http://localhost:3000**.
 
 **Signing in.** Verification is mocked: any phone number works and the code is
-always **`123456`**. The seeded accounts are the quickest way in — sign in as
-one in each browser profile to watch messages, ticks and typing indicators move
-live between them.
+always **`123456`**.
+
+**Register with your own number and the app is already populated** — you get
+the demo cast as contacts, two direct threads with history (one unread), and a
+place in the group. Seeding only one hardcoded account would leave anyone who
+signs up staring at an empty app. Switch it off with `STARTER_CHATS=false`.
+
+To watch messages, ticks and typing indicators move live, sign in as two of the
+seeded accounts in separate browser profiles:
 
 | Name | Number |
 |---|---|
@@ -108,6 +114,8 @@ Two decisions worth knowing:
   horizontally would mean swapping it for Redis pub/sub.
 - **No migrations.** `create_all` on boot, which is honest for one developer on
   SQLite.
+- **New accounts are given starter chats** so the app is never empty on first
+  sign-in. Demo behaviour, and clearly switchable rather than hidden.
 - **System notices never count as unread.** "Alice added Bob" belongs in the
   thread and the sidebar preview, but badging it would nag everyone on every
   membership change.
