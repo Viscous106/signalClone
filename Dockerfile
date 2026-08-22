@@ -28,6 +28,10 @@ COPY --from=web /app/frontend/out frontend/out
 RUN mkdir -p /data
 ENV DATABASE_URL=sqlite:////data/signal.db
 
+# Declared so the EXPOSE below and the bound port always agree; hosts that
+# inject their own PORT override it and the CMD follows.
+ENV PORT=8000
 EXPOSE 8000
+
 WORKDIR /app/backend
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]

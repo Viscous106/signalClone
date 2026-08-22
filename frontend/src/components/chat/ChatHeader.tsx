@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
+
 import { Avatar } from "@/components/ui/Avatar";
-import { CallIcon, SearchIcon } from "@/components/ui/icons";
+import { BackIcon, CallIcon, SearchIcon } from "@/components/ui/icons";
 import { listTimestamp } from "@/lib/format";
 import { conversationTitle, otherMember } from "@/lib/conversation";
 import type { Conversation } from "@/lib/types";
@@ -31,7 +33,15 @@ export function ChatHeader({
           : counterpart?.phone ?? "";
 
   return (
-    <header className="flex h-header shrink-0 items-center gap-3 border-b border-edge px-4">
+    <header className="flex h-header shrink-0 items-center gap-2 border-b border-edge px-2 md:gap-3 md:px-4">
+      {/* On a phone the thread replaces the list, so it needs a way back. */}
+      <Link
+        href="/"
+        aria-label="Back to chats"
+        className="rounded-full p-2 text-label hover:bg-surface-2 md:hidden"
+      >
+        <BackIcon />
+      </Link>
       <Avatar
         name={title}
         size={32}

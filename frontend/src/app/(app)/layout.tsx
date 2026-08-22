@@ -3,10 +3,12 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { MobileTabs } from "@/components/rail/MobileTabs";
 import { NavRail } from "@/components/rail/NavRail";
 import { Toaster } from "@/components/ui/Toaster";
 import { useRealtime } from "@/hooks/useRealtime";
 import { useUnreadTitle } from "@/hooks/useUnreadTitle";
+import { mobilePane, showsTabBar } from "@/lib/shell";
 import { usePreferences } from "@/store/preferences";
 import { SidebarSlot } from "@/components/sidebar/SidebarSlot";
 import { loadCurrentUser } from "@/lib/session";
@@ -50,12 +52,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Settings brings its own nav pane, so the chat list steps aside.
   const chrome = !pathname.startsWith("/settings");
+  // A phone has room for exactly one pane; the other is hidden until `md`.
+  const primary = mobilePane(pathname);
+  const tabBar = showsTabBar(pathname);
+  const paneRoom = tabBar ? "pb-16 md:pb-0" : "";
 
   return (
     <div className="flex h-screen overflow-hidden bg-surface">
-      <NavRail user={user} />
-      {chrome && <SidebarSlot meId={user.id} />}
-      <section className="min-w-0 flex-1">{children}</section>
+      {/* The rail is a desktop affordance; phones get the bottom tabs. */}
+      <div className="hidden md:flex">
+        <NavRail user={user} />
+      </div>
+
+      {chrome && (
+        <div
+          className={`${primary === "list" ? "flex" : "hidden"} min-w-0 flex-1 md:flex md:flex-none ${paneRoom}`}
+        >
+          <SidebarSlot meId={user.id} />
+        </div>
+      )}
+
+      <section
+        className={`${primary === "main" ? "flex" : "hidden"} min-w-0 flex-1 flex-col md:flex ${paneRoom}`}
+      >
+        {children}
+      </section>
+
+      {tabBar && <MobileTabs />}
       <Toaster />
     </div>
   );

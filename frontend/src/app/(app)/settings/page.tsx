@@ -17,6 +17,7 @@ import {
 } from "@/components/settings/sections";
 import { ProfileEditor } from "@/components/settings/ProfileEditor";
 import { Avatar } from "@/components/ui/Avatar";
+import { BackIcon } from "@/components/ui/icons";
 import { api } from "@/lib/api";
 import { useSession } from "@/store/session";
 
@@ -64,6 +65,13 @@ export default function SettingsPage() {
   const router = useRouter();
   const { user, setUser } = useSession();
   const [section, setSection] = useState<SectionId>("profile");
+  // On a phone the two panes cannot sit side by side, so picking a section
+  // replaces the list and the header grows a way back.
+  const [showDetail, setShowDetail] = useState(false);
+  const open = (next: SectionId) => {
+    setSection(next);
+    setShowDetail(true);
+  };
 
   async function logout() {
     await api.post("/api/auth/logout");
@@ -78,7 +86,7 @@ export default function SettingsPage() {
     <div className="flex h-full">
       <nav
         aria-label="Settings"
-        className="flex w-[320px] shrink-0 flex-col border-r border-edge bg-surface-2"
+        className={`${showDetail ? "hidden" : "flex"} min-w-0 flex-1 flex-col border-r border-edge bg-surface-2 md:flex md:w-[320px] md:flex-none`}
       >
         <header className="flex h-header shrink-0 items-center px-4">
           <h1 className="text-title2 font-semibold text-label">Settings</h1>
@@ -86,7 +94,7 @@ export default function SettingsPage() {
 
         <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
           <button
-            onClick={() => setSection("profile")}
+            onClick={() => open("profile")}
             aria-current={section === "profile" ? "page" : undefined}
             className={`mb-2 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left ${
               section === "profile" ? "bg-surface" : "hover:bg-surface"
@@ -110,7 +118,7 @@ export default function SettingsPage() {
           {NAV.map(({ id, label, icon }) => (
             <button
               key={id}
-              onClick={() => setSection(id)}
+              onClick={() => open(id)}
               aria-current={section === id ? "page" : undefined}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-body2 ${
                 section === id ? "bg-surface text-label" : "text-label hover:bg-surface"
@@ -133,8 +141,21 @@ export default function SettingsPage() {
         </div>
       </nav>
 
-      <div className="min-w-0 flex-1 overflow-y-auto">
-        <h2 className="py-3 text-center text-body2 font-semibold text-label">{TITLES[section]}</h2>
+      <div
+        className={`${showDetail ? "block" : "hidden"} min-w-0 flex-1 overflow-y-auto md:block`}
+      >
+        <div className="flex h-header items-center px-2 md:justify-center">
+          <button
+            onClick={() => setShowDetail(false)}
+            aria-label="Back to settings"
+            className="rounded-full p-2 text-label hover:bg-surface-2 md:hidden"
+          >
+            <BackIcon />
+          </button>
+          <h2 className="flex-1 pr-9 text-center text-body2 font-semibold text-label md:pr-0">
+            {TITLES[section]}
+          </h2>
+        </div>
         {/* A centred column, roughly the width the desktop app uses. */}
         <div className="mx-auto max-w-[600px] px-6 pb-16">
           {section === "profile" && <ProfileEditor user={user} />}

@@ -16,7 +16,10 @@ function SidebarWithActive({ meId }: { meId: number }) {
 }
 
 const placeholder = (
-  <aside className="w-[320px] shrink-0 border-r border-edge bg-surface-2" aria-hidden="true" />
+  <aside
+    className="min-w-0 flex-1 border-r border-edge bg-surface-2 md:w-[320px] md:flex-none"
+    aria-hidden="true"
+  />
 );
 
 export function SidebarSlot({ meId }: { meId: number }) {

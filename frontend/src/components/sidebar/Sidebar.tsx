@@ -24,7 +24,7 @@ export function Sidebar({ meId, activeId }: { meId: number; activeId: number | n
   }, [load]);
 
   return (
-    <aside className="flex w-[320px] shrink-0 flex-col border-r border-edge bg-surface-2">
+    <aside className="flex min-w-0 flex-1 flex-col border-r border-edge bg-surface-2 md:w-[320px] md:flex-none">
       {view === "new-chat" && (
         <NewChatPanel onBack={() => setView("chats")} onNewGroup={() => setView("new-group")} />
       )}

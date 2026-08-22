@@ -40,8 +40,8 @@ None of these added features — all restyling of screens already built.
 
 - Group info is a centred dialog; the app uses a right-hand conversation
   details panel.
-- Mobile layout: bottom tab bar, squircle FAB, "Get started" cards. Responsive
-  design is a bonus item, not a core one.
+- Mobile: the bottom tab bar and single-pane layout are done. Still missing the
+  squircle FAB and the "Get started" cards.
 - Contact rows lack the trailing username/verified glyph, and mobile's
   single-letter section headers.
 

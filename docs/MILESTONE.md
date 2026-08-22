@@ -64,7 +64,7 @@ Goal: **look, feel and behave like Signal.** Encryption is mocked, not real.
 - [ ] Submit repo link + demo link
 
 ## Bonus (only after M1–M7)
-Attachments · emoji reactions · reply/quote · disappearing messages · dark mode · responsive (mobile/tablet/desktop) · keyboard shortcuts
+Attachments · emoji reactions · reply/quote · disappearing messages · **dark mode (done)** · **responsive mobile/tablet/desktop (done)** · keyboard shortcuts
 
 ## Non-negotiables
 - UI must closely resemble Signal — study the real app before building.
