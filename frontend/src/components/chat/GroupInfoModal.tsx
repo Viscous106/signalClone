@@ -152,9 +152,9 @@ export function GroupInfoModal({ conversation, meId, onClose }: Props) {
                   {m.user.display_name}
                   {m.user.id === meId && <span className="text-label-2"> (you)</span>}
                 </span>
-                {m.role === "admin" && (
-                  <span className="block text-caption text-label-2">Admin</span>
-                )}
+                <span className="block truncate text-caption text-label-2">
+                  {m.role === "admin" ? `Admin · ${m.user.phone}` : m.user.phone}
+                </span>
               </span>
               {/* You leave rather than remove yourself. */}
               {iAmAdmin && m.user.id !== meId && (

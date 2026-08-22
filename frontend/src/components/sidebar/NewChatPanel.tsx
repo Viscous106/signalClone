@@ -145,8 +145,11 @@ export function NewChatPanel({ onBack, onNewGroup }: Props) {
               size={32}
               online={person.online}
             />
-            <span className="min-w-0 flex-1 truncate text-body1 text-label">
-              {person.display_name}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-body1 text-label">{person.display_name}</span>
+              {/* Two people can share a name; the number is what tells them
+                  apart, so it is not optional. */}
+              <span className="block truncate text-body2 text-label-2">{person.phone}</span>
             </span>
           </button>
         ))}

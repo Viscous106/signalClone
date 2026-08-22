@@ -68,6 +68,16 @@ describe("NewChatPanel", () => {
     expect(screen.getByText("Carol Nwosu")).toBeInTheDocument();
   });
 
+  it("shows each number, so two people with one name are distinguishable", async () => {
+    // Both of these are called Lambda. Without the number there is no way to
+    // tell which is which.
+    mockApi({ "/api/contacts": [person(7, "Lambda"), person(8, "Lambda")] });
+    render(<NewChatPanel onBack={vi.fn()} onNewGroup={vi.fn()} />);
+
+    expect(await screen.findByText("+15550000007")).toBeInTheDocument();
+    expect(screen.getByText("+15550000008")).toBeInTheDocument();
+  });
+
   it("searches all users once I type", async () => {
     const user = userEvent.setup();
     const calls = mockApi({

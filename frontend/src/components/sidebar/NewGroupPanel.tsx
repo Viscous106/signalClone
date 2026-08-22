@@ -116,8 +116,13 @@ export function NewGroupPanel({ onBack }: { onBack: () => void }) {
                       url={person.avatar_url}
                       size={32}
                     />
-                    <span className="min-w-0 flex-1 truncate text-body1 text-label">
-                      {person.display_name}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-body1 text-label">
+                        {person.display_name}
+                      </span>
+                      <span className="block truncate text-body2 text-label-2">
+                        {person.phone}
+                      </span>
                     </span>
                     <span
                       aria-hidden="true"
