@@ -49,6 +49,14 @@ run-api: ## Run only the FastAPI backend
 run-web: ## Run only the Next.js frontend
 	cd $(FRONTEND) && pnpm dev
 
+build: ## Build the frontend into the bundle the API serves
+	cd $(FRONTEND) && pnpm build
+	@echo "==> $(FRONTEND)/out ready"
+
+serve: build ## Run the production shape: one process, one port
+	@echo "app -> http://localhost:8000"
+	cd $(BACKEND) && .venv/bin/uvicorn app.main:app --port 8000
+
 test: test-api test-web ## Run every test suite
 
 test-api: ## Backend tests (pytest)

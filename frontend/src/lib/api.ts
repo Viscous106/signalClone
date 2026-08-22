@@ -1,8 +1,14 @@
 /**
- * Thin fetch wrapper. Requests go to relative `/api/...` and Next rewrites them
- * to the FastAPI server (see next.config.ts), so everything is same-origin and
- * the session cookie needs no CORS dance.
+ * Thin fetch wrapper.
+ *
+ * In production the API serves this bundle, so `/api/...` is same-origin and
+ * the session cookie needs no CORS dance. `next dev` runs on its own port, so
+ * development points at the API explicitly.
  */
+
+const BASE =
+  process.env.NEXT_PUBLIC_API_BASE ??
+  (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000");
 
 export class ApiError extends Error {
   constructor(
@@ -15,7 +21,7 @@ export class ApiError extends Error {
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(`${BASE}${path}`, {
     method,
     credentials: "include",
     headers: body ? { "Content-Type": "application/json" } : undefined,

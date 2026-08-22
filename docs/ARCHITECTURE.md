@@ -1,12 +1,27 @@
 # Architecture
 
 ```
-Next.js (Vercel-ready)          FastAPI + uvicorn            SQLite
-  ├── fetch  ──── REST /api ────────►  routers  ──► SQLAlchemy ──► signal.db
-  └── WebSocket ── /ws (cookie) ────►  ConnectionManager
+                    FastAPI + uvicorn (one process, one port)
+browser ──── /       ──►  static bundle (frontend/out)
+        ──── /api/*  ──►  routers  ──► SQLAlchemy ──► signal.db
+        ──── /ws     ──►  ConnectionManager
 ```
 
-One HTTP API for reads/writes, one WebSocket for push. The socket carries no writes except typing indicators.
+One HTTP API for reads/writes, one WebSocket for push. The socket carries no
+writes except typing indicators.
+
+**The API serves the frontend.** It is a static export mounted by
+`app/web.py`, which means one origin, one deployment, no CORS and no reverse
+proxy. Unknown paths fall back to the app shell so client-side routes work on
+a hard refresh; `/api/*` and `/ws` deliberately 404 as JSON rather than falling
+through to HTML, so a mistyped endpoint fails loudly.
+
+Because the export is prerendered at build time there are no dynamic route
+segments: the open conversation is `?c=<id>` rather than `/chat/<id>`. Signal
+Desktop has no URLs at all, so nothing is lost.
+
+In development the frontend runs on its own port for hot reload, and points at
+the API explicitly.
 
 ## Repo layout
 

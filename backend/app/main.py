@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import auth, contacts, conversations, messages, users
+from app.web import mount_frontend
 from app.ws import routes as ws_routes
 from app.ws.manager import ConnectionManager
 from app.core.config import get_settings
@@ -56,6 +57,9 @@ def create_app(init_db: bool = True) -> FastAPI:
     @app.get("/api/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    # Last, so the catch-all cannot shadow an API route.
+    app.state.frontend_mounted = mount_frontend(app)
 
     return app
 

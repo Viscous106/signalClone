@@ -124,7 +124,7 @@ describe("NewGroupPanel", () => {
     await user.type(screen.getByLabelText(/group name/i), "Weekend Trip");
     await user.click(screen.getByRole("button", { name: /create/i }));
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/chat/77"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/chat?c=77"));
     const created = calls.find((c) => c.method === "POST");
     expect(created?.body).toEqual({ name: "Weekend Trip", member_ids: [2, 3] });
   });

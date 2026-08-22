@@ -1,10 +1,9 @@
 /**
  * WebSocket client.
  *
- * Next's rewrites do not proxy WebSockets, so this connects to the API
- * directly. Authentication rides on the session cookie: cookies ignore port,
- * so :3000 → :8000 works in development. A cross-domain deployment needs the
- * API on a sibling subdomain for the cookie to be sent.
+ * In production the API serves the frontend, so this is a same-origin socket
+ * and the session cookie is sent as a matter of course. In development the two
+ * run on separate ports; cookies ignore port, so that works too.
  */
 
 import type { Conversation, Message } from "./types";
@@ -36,13 +35,15 @@ const HEARTBEAT_MS = 25_000;
 const MAX_BACKOFF_MS = 10_000;
 
 function socketUrl(): string {
+  // An explicit override is only needed when the API is on another host.
   if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
   if (typeof window === "undefined") return "";
 
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  // In development the API is on its own port; in production assume it is
-  // reachable on the same host behind a proxy.
-  const host = process.env.NODE_ENV === "production" ? window.location.host : "localhost:8000";
+  // Served by the API itself, so the socket lives on this very origin. In
+  // development `next dev` runs separately, hence the port hint.
+  const host =
+    process.env.NODE_ENV === "production" ? window.location.host : "localhost:8000";
   return `${protocol}//${host}/ws`;
 }
 

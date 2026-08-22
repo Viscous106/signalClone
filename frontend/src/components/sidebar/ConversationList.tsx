@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+import { chatHref } from "@/hooks/useActiveConversation";
+
 import { listTimestamp } from "@/lib/format";
 import { conversationTitle, matchesSearch, otherMember, previewText } from "@/lib/conversation";
 import type { Conversation } from "@/lib/types";
@@ -73,7 +75,7 @@ function Row({
   return (
     <li>
       <Link
-        href={`/chat/${conversation.id}`}
+        href={chatHref(conversation.id)}
         aria-current={active ? "page" : undefined}
         // 72px row, 11px inline padding — Signal's own metrics.
         className={`flex h-row items-center gap-3 px-[11px] transition-colors ${

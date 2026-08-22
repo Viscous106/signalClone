@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { NavRail } from "@/components/rail/NavRail";
@@ -8,14 +8,13 @@ import { Toaster } from "@/components/ui/Toaster";
 import { useRealtime } from "@/hooks/useRealtime";
 import { useUnreadTitle } from "@/hooks/useUnreadTitle";
 import { usePreferences } from "@/store/preferences";
-import { Sidebar } from "@/components/sidebar/Sidebar";
+import { SidebarSlot } from "@/components/sidebar/SidebarSlot";
 import { loadCurrentUser } from "@/lib/session";
 import { useSession } from "@/store/session";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const params = useParams<{ id?: string }>();
   const { user, setUser } = useSession();
 
   // One socket for the whole app, opened as soon as we know who we are.
@@ -51,12 +50,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Settings brings its own nav pane, so the chat list steps aside.
   const chrome = !pathname.startsWith("/settings");
-  const activeId = params?.id ? Number(params.id) : null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-surface">
       <NavRail user={user} />
-      {chrome && <Sidebar meId={user.id} activeId={activeId} />}
+      {chrome && <SidebarSlot meId={user.id} />}
       <section className="min-w-0 flex-1">{children}</section>
       <Toaster />
     </div>

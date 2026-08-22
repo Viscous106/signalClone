@@ -7,7 +7,9 @@ import { useConversations } from "@/store/conversations";
 import { useMessages } from "@/store/messages";
 import { useSession } from "@/store/session";
 
-vi.mock("next/navigation", () => ({ useParams: () => ({ id: "3" }) }));
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams("c=3"),
+}));
 vi.mock("@/hooks/useRealtime", () => ({ sendTyping: vi.fn() }));
 
 const person = (id: number, display_name: string): UserBrief => ({

@@ -104,7 +104,7 @@ describe("NewChatPanel", () => {
 
     await user.click(await screen.findByText("Bob Martinez"));
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/chat/42"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/chat?c=42"));
     const created = calls.find((c) => c.method === "POST" && c.url.includes("/api/conversations"));
     expect(created?.body).toEqual({ user_id: 2 });
   });

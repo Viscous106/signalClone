@@ -137,6 +137,6 @@ describe("ConversationList", () => {
 
   it("links each row to its chat", () => {
     render(<ConversationList conversations={list} meId={ME} activeId={null} query="" />);
-    expect(screen.getAllByRole("link")[0]).toHaveAttribute("href", "/chat/3");
+    expect(screen.getAllByRole("link")[0]).toHaveAttribute("href", "/chat?c=3");
   });
 });

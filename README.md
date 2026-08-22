@@ -44,7 +44,9 @@ Alice starts with two direct chats and a group, one of them unread.
 |---|---|
 | `make` | List every target |
 | `make setup` | Install backend and frontend dependencies |
-| `make run` | Both servers; Ctrl-C stops both |
+| `make run` | Both dev servers with hot reload; Ctrl-C stops both |
+| `make build` | Build the frontend into the bundle the API serves |
+| `make serve` | Run the production shape: one process, one port |
 | `make test` | pytest + vitest |
 | `make db` / `make remove-db` / `make reset-db` | Manage the SQLite file |
 
@@ -61,15 +63,19 @@ Alice starts with two direct chats and a group, one of them unread.
 ## How it fits together
 
 ```
-Next.js (:3000)                    FastAPI (:8000)              SQLite
-  ├── fetch ──── /api/* ──rewrite──►  routers ──► SQLAlchemy ──► signal.db
-  └── WebSocket ───────── /ws ──────►  ConnectionManager
+                       FastAPI (one process, one port)
+browser ──── / ──────►  static bundle (frontend/out)
+        ──── /api/* ──►  routers ──► SQLAlchemy ──► signal.db
+        ──── /ws ─────►  ConnectionManager
 ```
 
-The browser only ever talks to one origin: Next rewrites `/api/*` to FastAPI,
-so the session cookie needs no CORS or SameSite exceptions. WebSockets are the
-exception — Next rewrites do not proxy them, so the socket connects to the API
-directly and authenticates with the same cookie.
+The frontend is a **static export that the API serves itself**, so the whole
+app is one origin and one deployment. No CORS, no reverse proxy, and the
+WebSocket is same-origin — which a Next rewrite could never have proxied
+anyway.
+
+In development the two run separately (`make run`) so the frontend keeps hot
+reload; `make serve` runs the production shape locally.
 
 **Writes go over HTTP; the socket only fans out.** A message is persisted by a
 `POST` and then broadcast, so a dropped connection can never lose one.
@@ -137,7 +143,20 @@ WebSocket connections.
 
 ## Deployment
 
-The frontend is Vercel-ready. The API needs a host that supports WebSockets and
-a **persistent disk** for `signal.db`; without one the database resets on every
-redeploy. Set `API_URL` (frontend) and `NEXT_PUBLIC_WS_URL`, `JWT_SECRET` and
-`CORS_ORIGINS` (backend).
+**One service.** The Dockerfile builds the frontend and hands the bundle to the
+API, so there is a single image, a single URL, and nothing to keep in sync
+between two hosts.
+
+```bash
+docker build -t signal-clone .
+docker run -p 8000:8000 -v signal-data:/data signal-clone
+```
+
+`render.yaml` deploys exactly that. Two things matter:
+
+- **A persistent disk** mounted at `/data`. SQLite lives in a file, so without
+  one the database is wiped on every redeploy.
+- **`JWT_SECRET`** — the default is a development placeholder. `render.yaml`
+  generates one.
+
+The host must support WebSockets; most do, but a few static hosts do not.

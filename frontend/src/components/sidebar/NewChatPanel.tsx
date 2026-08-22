@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { PanelHeader } from "@/components/sidebar/PanelHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { AtIcon, GroupIcon, HashIcon, SearchIcon } from "@/components/ui/icons";
+import { chatHref } from "@/hooks/useActiveConversation";
 import { ApiError, api } from "@/lib/api";
 import { isValidPhone, toE164 } from "@/lib/phone";
 import type { Conversation, UserBrief } from "@/lib/types";
@@ -55,7 +56,7 @@ export function NewChatPanel({ onBack, onNewGroup }: Props) {
       const conversation = await api.post<Conversation>("/api/conversations", {
         user_id: person.id,
       });
-      router.push(`/chat/${conversation.id}`);
+      router.push(chatHref(conversation.id));
       onBack();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not start that chat");

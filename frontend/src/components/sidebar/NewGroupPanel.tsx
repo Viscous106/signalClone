@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { PanelHeader } from "@/components/sidebar/PanelHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { SearchIcon } from "@/components/ui/icons";
+import { chatHref } from "@/hooks/useActiveConversation";
 import { ApiError, api } from "@/lib/api";
 import type { Conversation, UserBrief } from "@/lib/types";
 
@@ -46,7 +47,7 @@ export function NewGroupPanel({ onBack }: { onBack: () => void }) {
         name: name.trim(),
         member_ids: chosen.map((p) => p.id),
       });
-      router.push(`/chat/${group.id}`);
+      router.push(chatHref(group.id));
       onBack();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create that group");

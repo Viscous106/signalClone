@@ -1,13 +1,13 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { GroupInfoModal } from "@/components/chat/GroupInfoModal";
 import { Composer } from "@/components/chat/Composer";
 import { MessageList } from "@/components/chat/MessageList";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
+import { useActiveConversationId } from "@/hooks/useActiveConversation";
 import { sendTyping } from "@/hooks/useRealtime";
 import { api } from "@/lib/api";
 import type { Conversation } from "@/lib/types";
@@ -15,9 +15,8 @@ import { useConversations } from "@/store/conversations";
 import { selectTyping, useMessages } from "@/store/messages";
 import { useSession } from "@/store/session";
 
-export default function ChatPage() {
-  const params = useParams<{ id: string }>();
-  const conversationId = Number(params.id);
+function ChatPane() {
+  const conversationId = useActiveConversationId() ?? Number.NaN;
 
   const me = useSession((s) => s.user);
   const conversation = useConversations((s) => s.items.find((c) => c.id === conversationId));
@@ -91,5 +90,17 @@ export default function ChatPage() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Suspended because it reads `?c=`, which a static export cannot know when it
+ * prerenders this route.
+ */
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<div className="h-full" aria-busy="true" />}>
+      <ChatPane />
+    </Suspense>
   );
 }

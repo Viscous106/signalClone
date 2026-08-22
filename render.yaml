@@ -1,0 +1,19 @@
+# One service. The API serves the frontend, so there is nothing to deploy twice.
+services:
+  - type: web
+    name: signal-clone
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      # Generate a real one; the default is a development placeholder.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:////data/signal.db
+    disk:
+      # Without this the database is wiped on every redeploy.
+      name: signal-data
+      mountPath: /data
+      sizeGB: 1

@@ -1,15 +1,16 @@
 import type { NextConfig } from "next";
 
-// Proxy the API so the browser only ever talks to one origin: the session
-// cookie then needs no CORS or SameSite exceptions.
-// Note: Next rewrites do not proxy WebSockets — the socket in Phase 3 connects
-// to the backend directly.
-const API_URL = process.env.API_URL ?? "http://localhost:8000";
-
+/**
+ * The frontend builds to a static bundle that the FastAPI app serves itself.
+ *
+ * One service, one origin: no CORS, no rewrites, and the WebSocket is
+ * same-origin — Next rewrites could never have proxied it anyway.
+ */
 const nextConfig: NextConfig = {
-  async rewrites() {
-    return [{ source: "/api/:path*", destination: `${API_URL}/api/:path*` }];
-  },
+  output: "export",
+  // Directory-style URLs, so a plain static file server resolves /chat/ too.
+  trailingSlash: true,
+  images: { unoptimized: true },
 };
 
 export default nextConfig;
