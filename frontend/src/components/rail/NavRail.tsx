@@ -22,7 +22,18 @@ export function NavRail({ user }: { user: User }) {
       aria-label="Main"
       className="flex w-rail shrink-0 flex-col items-center justify-between border-r border-edge bg-surface-2 py-4"
     >
-      <ul className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-2">
+        <button
+          aria-label="Menu"
+          title="Menu — coming soon"
+          className="flex h-12 w-12 cursor-not-allowed items-center justify-center rounded-lg text-label-2 opacity-60"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+          </svg>
+        </button>
+
+        <ul className="flex flex-col items-center gap-2">
         {TABS.map(({ href, label, Icon, match }) => {
           const active = match(pathname);
           return (
@@ -41,12 +52,22 @@ export function NavRail({ user }: { user: User }) {
             </li>
           );
         })}
-      </ul>
+        </ul>
+      </div>
 
-      <Link href="/settings" title="Settings" aria-label="Settings">
+      <Link
+        href="/settings"
+        title="Settings"
+        aria-label="Settings"
+        aria-current={pathname.startsWith("/settings") ? "page" : undefined}
+        className={`flex h-12 w-12 items-center justify-center rounded-lg transition-colors ${
+          pathname.startsWith("/settings") ? "bg-surface" : "hover:bg-surface"
+        }`}
+      >
         <Avatar
           name={user.display_name}
           color={user.avatar_color}
+          fg={user.avatar_fg}
           url={user.avatar_url}
           size={32}
         />

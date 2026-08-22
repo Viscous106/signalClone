@@ -72,6 +72,7 @@ describe("MessageList", () => {
         phone: "+15550000002",
         avatar_url: null,
         avatar_color: "#336BA3",
+        avatar_fg: "#5C5C5C",
         about: null,
         last_seen_at: null,
         online: false,

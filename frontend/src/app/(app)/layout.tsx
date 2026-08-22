@@ -5,6 +5,7 @@ import { useEffect } from "react";
 
 import { NavRail } from "@/components/rail/NavRail";
 import { useRealtime } from "@/hooks/useRealtime";
+import { usePreferences } from "@/store/preferences";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { loadCurrentUser } from "@/lib/session";
 import { useSession } from "@/store/session";
@@ -17,6 +18,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // One socket for the whole app, opened as soon as we know who we are.
   useRealtime(user?.id);
+
+  // Theme lives in localStorage, which the server cannot read.
+  const hydratePreferences = usePreferences((s) => s.hydrate);
+  useEffect(() => {
+    hydratePreferences();
+  }, [hydratePreferences]);
 
   useEffect(() => {
     // The cookie survives reloads but the store does not, so rehydrate the
@@ -39,7 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return <div className="h-screen bg-surface" aria-busy="true" />;
   }
 
-  // Settings takes over the whole window, as it does in Signal.
+  // Settings brings its own nav pane, so the chat list steps aside.
   const chrome = !pathname.startsWith("/settings");
   const activeId = params?.id ? Number(params.id) : null;
 

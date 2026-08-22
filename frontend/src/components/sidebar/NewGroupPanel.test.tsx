@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { NewGroupModal } from "./NewGroupModal";
+import { NewGroupPanel } from "./NewGroupPanel";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -13,6 +13,7 @@ const person = (id: number, display_name: string) => ({
   phone: `+1555000000${id}`,
   avatar_url: null,
   avatar_color: "#D8E8F0",
+  avatar_fg: "#5C5C5C",
   about: null,
   last_seen_at: null,
   online: false,
@@ -46,7 +47,7 @@ const goToNaming = async (user: ReturnType<typeof userEvent.setup>, names: strin
   await user.click(screen.getByRole("button", { name: /next/i }));
 };
 
-describe("NewGroupModal", () => {
+describe("NewGroupPanel", () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
     push.mockClear();
@@ -54,14 +55,14 @@ describe("NewGroupModal", () => {
 
   it("lists my contacts to choose from", async () => {
     mockApi({ "/api/contacts": CONTACTS });
-    render(<NewGroupModal onClose={vi.fn()} />);
+    render(<NewGroupPanel onBack={vi.fn()} />);
     expect(await screen.findByText("Bob Martinez")).toBeInTheDocument();
     expect(screen.getByText("Dave Kim")).toBeInTheDocument();
   });
 
   it("will not continue with nobody selected", async () => {
     mockApi({ "/api/contacts": CONTACTS });
-    render(<NewGroupModal onClose={vi.fn()} />);
+    render(<NewGroupPanel onBack={vi.fn()} />);
     await screen.findByText("Bob Martinez");
     expect(screen.getByRole("button", { name: /next/i })).toBeDisabled();
   });
@@ -69,7 +70,7 @@ describe("NewGroupModal", () => {
   it("shows who is selected and counts them", async () => {
     const user = userEvent.setup();
     mockApi({ "/api/contacts": CONTACTS });
-    render(<NewGroupModal onClose={vi.fn()} />);
+    render(<NewGroupPanel onBack={vi.fn()} />);
 
     await user.click(await screen.findByText("Bob Martinez"));
     await user.click(screen.getByText("Carol Nwosu"));
@@ -81,7 +82,7 @@ describe("NewGroupModal", () => {
   it("lets me deselect someone", async () => {
     const user = userEvent.setup();
     mockApi({ "/api/contacts": CONTACTS });
-    render(<NewGroupModal onClose={vi.fn()} />);
+    render(<NewGroupPanel onBack={vi.fn()} />);
 
     await user.click(await screen.findByText("Bob Martinez"));
     await user.click(screen.getByText("Bob Martinez"));
@@ -92,7 +93,7 @@ describe("NewGroupModal", () => {
   it("asks for a name before creating anything", async () => {
     const user = userEvent.setup();
     const calls = mockApi({ "/api/contacts": CONTACTS });
-    render(<NewGroupModal onClose={vi.fn()} />);
+    render(<NewGroupPanel onBack={vi.fn()} />);
 
     await goToNaming(user, ["Bob Martinez"]);
 
@@ -103,7 +104,7 @@ describe("NewGroupModal", () => {
   it("will not create a group with a blank name", async () => {
     const user = userEvent.setup();
     mockApi({ "/api/contacts": CONTACTS });
-    render(<NewGroupModal onClose={vi.fn()} />);
+    render(<NewGroupPanel onBack={vi.fn()} />);
 
     await goToNaming(user, ["Bob Martinez"]);
     await user.type(screen.getByLabelText(/group name/i), "   ");
@@ -117,7 +118,7 @@ describe("NewGroupModal", () => {
       "/api/contacts": CONTACTS,
       "POST /api/conversations": { id: 77, type: "group", name: "Weekend Trip" },
     });
-    render(<NewGroupModal onClose={vi.fn()} />);
+    render(<NewGroupPanel onBack={vi.fn()} />);
 
     await goToNaming(user, ["Bob Martinez", "Carol Nwosu"]);
     await user.type(screen.getByLabelText(/group name/i), "Weekend Trip");
@@ -131,7 +132,7 @@ describe("NewGroupModal", () => {
   it("can go back to change the members", async () => {
     const user = userEvent.setup();
     mockApi({ "/api/contacts": CONTACTS });
-    render(<NewGroupModal onClose={vi.fn()} />);
+    render(<NewGroupPanel onBack={vi.fn()} />);
 
     await goToNaming(user, ["Bob Martinez"]);
     await user.click(screen.getByRole("button", { name: /back/i }));

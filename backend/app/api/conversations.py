@@ -6,7 +6,7 @@ from app.db.models import (
     ConversationMember,
     Message,
     User,
-    pick_avatar_color,
+    pick_avatar_token,
 )
 from app.schemas.conversation import (
     AddMembersRequest,
@@ -106,7 +106,7 @@ def _create_direct(other_id: int, user: User, db) -> Conversation:
         return _bare(existing)
 
     conversation = Conversation(
-        type="direct", created_by=user.id, avatar_color=pick_avatar_color(other.phone)
+        type="direct", created_by=user.id, avatar_token=pick_avatar_token(other.phone)
     )
     db.add(conversation)
     db.flush()

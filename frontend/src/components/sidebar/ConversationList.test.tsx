@@ -20,6 +20,7 @@ const person = (id: number, display_name: string): UserBrief => ({
   phone: `+1555000000${id}`,
   avatar_url: null,
   avatar_color: "#336BA3",
+  avatar_fg: "#5C5C5C",
   about: null,
   last_seen_at: null,
   online: false,
@@ -43,6 +44,7 @@ const conv = (over: Partial<Conversation> & { id: number }): Conversation => ({
   name: null,
   avatar_url: null,
   avatar_color: "#336BA3",
+  avatar_fg: "#5C5C5C",
   created_by: 1,
   created_at: new Date().toISOString(),
   last_message_at: new Date().toISOString(),
@@ -94,12 +96,13 @@ describe("ConversationList", () => {
   it("explains an empty result rather than showing a blank pane", () => {
     render(<ConversationList conversations={list} meId={ME} activeId={null} query="zebra" />);
     expect(screen.queryAllByTestId("conversation-title")).toHaveLength(0);
-    expect(screen.getByText(/no (results|conversations)/i)).toBeInTheDocument();
+    expect(screen.getByText("No results")).toBeInTheDocument();
   });
 
-  it("invites the user to start a chat when they have none at all", () => {
+  it("uses Signal's own wording when there are no chats at all", () => {
     render(<ConversationList conversations={[]} meId={ME} activeId={null} query="" />);
-    expect(screen.getByText(/no conversations/i)).toBeInTheDocument();
+    expect(screen.getByText("No chats")).toBeInTheDocument();
+    expect(screen.getByText(/recent chats will appear here/i)).toBeInTheDocument();
   });
 
   it("marks the open conversation as current for assistive tech", () => {

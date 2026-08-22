@@ -13,6 +13,14 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Signal",
   description: "Speak Freely",
+  applicationName: "Signal",
+};
+
+export const viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#191919" },
+    { media: "(prefers-color-scheme: light)", color: "#FAFAFA" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

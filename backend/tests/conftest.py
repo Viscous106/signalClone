@@ -66,13 +66,13 @@ def client(app):
 @pytest.fixture()
 def make_user(db):
     """Create a user directly, bypassing the auth flow."""
-    from app.db.models import User, pick_avatar_color
+    from app.db.models import User, pick_avatar_token
 
     def _make(phone: str, display_name: str, **kwargs):
         user = User(
             phone=phone,
             display_name=display_name,
-            avatar_color=pick_avatar_color(phone),
+            avatar_token=pick_avatar_token(phone),
             **kwargs,
         )
         db.add(user)

@@ -11,7 +11,7 @@ from app.db.models import (
     ConversationMember,
     Message,
     User,
-    pick_avatar_color,
+    pick_avatar_token,
 )
 
 PEOPLE = [
@@ -82,7 +82,7 @@ def seed(db: Session) -> None:
             username=username,
             display_name=name,
             about=about,
-            avatar_color=pick_avatar_color(phone),
+            avatar_token=pick_avatar_token(phone),
             last_seen_at=_now_minus(5),
         )
         db.add(u)
@@ -102,7 +102,7 @@ def seed(db: Session) -> None:
             type=kind,
             name=name,
             created_by=users[members[0]].id,
-            avatar_color=pick_avatar_color(name or "".join(members)),
+            avatar_token=pick_avatar_token(name or "".join(members)),
         )
         db.add(conv)
         db.flush()

@@ -36,6 +36,7 @@ export function ChatHeader({
         name={title}
         size={32}
         color={conversation.type === "group" ? conversation.avatar_color : counterpart?.avatar_color}
+        fg={conversation.type === "group" ? conversation.avatar_fg : counterpart?.avatar_fg}
         url={conversation.avatar_url ?? counterpart?.avatar_url}
         online={counterpart?.online ?? false}
       />

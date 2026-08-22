@@ -14,21 +14,36 @@ of 80px — so the inferred numbers below are trustworthy to about ±2px.
 > populated chat list or a message thread. Bubble geometry therefore still
 > comes from Signal's stylesheets (see
 > [SIGNAL-UI-REFERENCE.md](./SIGNAL-UI-REFERENCE.md)), not from these images.
+>
+> **Trademark:** the mark and wordmark are reproduced because the brief
+> requires the look and feel to match exactly. Signal's brand terms restrict
+> reuse of their logo, which matters for a public repo and a hosted demo — a
+> deliberate choice, not an oversight.
 
 ## Corrections to what is already built
 
-| # | Now | Should be | Phase |
-|---|---|---|---|
-| 1 | Avatars: solid saturated fill + white initials | **Pastel fill + saturated initials of the same hue** (Signal's A100–A210 pairs) | 2 |
-| 2 | List pane 340px | **320px** | 2 |
-| 3 | New chat is a centred modal | **A panel that replaces the list in the left pane**, with a back chevron | 2 |
-| 4 | Settings takes the whole window | **Rail + 320px settings nav + detail pane**; rail stays visible | 5 |
-| 5 | Login is centred, full-width button | **Left-aligned title/blurb, country selector, bottom-right "Next" pill** | 1 |
-| 6 | OTP is one wide input | **Six separate digit boxes, grouped 3–3 with a hyphen** | 1 |
-| 7 | Empty right pane says "Select a chat" | **Signal logo + "Welcome to Signal" + nonprofit footer** | 2 |
+| # | Correction | Status |
+|---|---|---|
+| 1 | Avatars: pastel fill + saturated initials (A100–A210 pairs), not white on saturated | **done** |
+| 2 | List pane 320px, not 340px | **done** |
+| 3 | New chat / new group as panels replacing the list, with a back chevron | **done** |
+| 4 | Settings as rail + 320px nav + centred detail column | **done** |
+| 5 | Onboarding left-aligned with country selector and bottom-right "Next" | **done** |
+| 6 | OTP as six digit boxes grouped 3–3 | **done** |
+| 7 | Empty chat pane: Signal mark, "Welcome to Signal", nonprofit footer | **done** |
+| 8 | Brand mark and wordmark; favicon in brand blue | **done** |
+| 9 | Chat-list overflow menu (View Archive / Add chat folder / Notification profile / Settings) | **done** |
 
-None of these add features. They are all restyling of screens already built or
-already planned.
+None of these added features — all restyling of screens already built.
+
+### Still open
+
+- Group info is a centred dialog; the app uses a right-hand conversation
+  details panel.
+- Mobile layout: bottom tab bar, squircle FAB, "Get started" cards. Responsive
+  design is a bonus item, not a core one.
+- Contact rows lack the trailing username/verified glyph, and mobile's
+  single-letter section headers.
 
 ## Avatars — the most visible fix
 

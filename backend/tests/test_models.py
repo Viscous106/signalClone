@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.db.models import (
+    AVATAR_TOKENS,
     Contact,
     Conversation,
     ConversationMember,
@@ -23,13 +24,46 @@ class TestUser:
         u = mk_user(db)
         assert u.id is not None
         assert u.created_at is not None
-        assert u.avatar_color  # deterministic colour assigned for initials fallback
+        assert u.avatar_token in AVATAR_TOKENS  # deterministic pair for the initials fallback
 
     def test_phone_is_unique(self, db):
         mk_user(db, phone="+15550001")
         db.add(User(phone="+15550001", display_name="Impostor"))
         with pytest.raises(IntegrityError):
             db.commit()
+
+
+class TestAvatarPalette:
+    def test_a_token_maps_to_a_pale_fill_and_a_strong_foreground(self):
+        from app.db.models import avatar_pair
+
+        fill, initials = avatar_pair("A180")
+        assert (fill, initials) == ("#FEF5D0", "#836B01")
+
+    def test_every_token_has_both_halves(self):
+        from app.db.models import AVATAR_PALETTE
+
+        for token, (fill, initials) in AVATAR_PALETTE.items():
+            assert fill.startswith("#") and len(fill) == 7, token
+            assert initials.startswith("#") and len(initials) == 7, token
+            assert fill != initials, token
+
+    def test_unknown_tokens_fall_back_rather_than_crash(self):
+        from app.db.models import AVATAR_PALETTE, avatar_pair
+
+        assert avatar_pair("nonsense") == AVATAR_PALETTE["A210"]
+        assert avatar_pair(None) == AVATAR_PALETTE["A210"]
+
+    def test_the_same_identity_always_gets_the_same_token(self):
+        from app.db.models import pick_avatar_token
+
+        assert pick_avatar_token("+15550000001") == pick_avatar_token("+15550000001")
+
+    def test_the_api_returns_both_halves(self, client, login):
+        me = login("+15550000001", "Alice")
+        assert me["avatar_color"].startswith("#")
+        assert me["avatar_fg"].startswith("#")
+        assert me["avatar_color"] != me["avatar_fg"]
 
 
 class TestContact:

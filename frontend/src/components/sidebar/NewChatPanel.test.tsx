@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { NewChatModal } from "./NewChatModal";
+import { NewChatPanel } from "./NewChatPanel";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -13,6 +13,7 @@ const person = (id: number, display_name: string) => ({
   phone: `+1555000000${id}`,
   avatar_url: null,
   avatar_color: "#336BA3",
+  avatar_fg: "#5C5C5C",
   about: null,
   last_seen_at: null,
   online: false,
@@ -53,7 +54,7 @@ function mockApi(routes: Record<string, unknown>) {
   return calls;
 }
 
-describe("NewChatModal", () => {
+describe("NewChatPanel", () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
     push.mockClear();
@@ -61,7 +62,7 @@ describe("NewChatModal", () => {
 
   it("lists my contacts before I search anything", async () => {
     mockApi({ "/api/contacts": [person(2, "Bob Martinez"), person(3, "Carol Nwosu")] });
-    render(<NewChatModal onClose={vi.fn()} />);
+    render(<NewChatPanel onBack={vi.fn()} onNewGroup={vi.fn()} />);
 
     expect(await screen.findByText("Bob Martinez")).toBeInTheDocument();
     expect(screen.getByText("Carol Nwosu")).toBeInTheDocument();
@@ -73,9 +74,9 @@ describe("NewChatModal", () => {
       "/api/contacts": [],
       "/api/users/search": [person(9, "Dave Kim")],
     });
-    render(<NewChatModal onClose={vi.fn()} />);
+    render(<NewChatPanel onBack={vi.fn()} onNewGroup={vi.fn()} />);
 
-    await user.type(screen.getByPlaceholderText(/name or phone/i), "dave");
+    await user.type(screen.getByPlaceholderText(/name, username, or number/i), "dave");
 
     expect(await screen.findByText("Dave Kim")).toBeInTheDocument();
     await waitFor(() =>
@@ -89,7 +90,7 @@ describe("NewChatModal", () => {
       "/api/contacts": [person(2, "Bob Martinez")],
       "/api/conversations": { id: 42, type: "direct" },
     });
-    render(<NewChatModal onClose={vi.fn()} />);
+    render(<NewChatPanel onBack={vi.fn()} onNewGroup={vi.fn()} />);
 
     await user.click(await screen.findByText("Bob Martinez"));
 
@@ -101,9 +102,9 @@ describe("NewChatModal", () => {
   it("offers to add a number that is not yet a contact", async () => {
     const user = userEvent.setup();
     mockApi({ "/api/contacts": [], "/api/users/search": [] });
-    render(<NewChatModal onClose={vi.fn()} />);
+    render(<NewChatPanel onBack={vi.fn()} onNewGroup={vi.fn()} />);
 
-    await user.type(screen.getByPlaceholderText(/name or phone/i), "+15559998888");
+    await user.type(screen.getByPlaceholderText(/name, username, or number/i), "+15559998888");
 
     expect(await screen.findByRole("button", { name: /add.*\+1/i })).toBeInTheDocument();
   });
@@ -111,9 +112,9 @@ describe("NewChatModal", () => {
   it("does not offer to add a search term that is not a phone number", async () => {
     const user = userEvent.setup();
     mockApi({ "/api/contacts": [], "/api/users/search": [] });
-    render(<NewChatModal onClose={vi.fn()} />);
+    render(<NewChatPanel onBack={vi.fn()} onNewGroup={vi.fn()} />);
 
-    await user.type(screen.getByPlaceholderText(/name or phone/i), "zebra");
+    await user.type(screen.getByPlaceholderText(/name, username, or number/i), "zebra");
 
     await waitFor(() => expect(screen.getByText(/no one found/i)).toBeInTheDocument());
     expect(screen.queryByRole("button", { name: /^add/i })).not.toBeInTheDocument();
@@ -126,21 +127,40 @@ describe("NewChatModal", () => {
       "/api/users/search": [],
       "POST /api/contacts": { __status: 404, detail: "That number is not on Signal" },
     });
-    render(<NewChatModal onClose={vi.fn()} />);
+    render(<NewChatPanel onBack={vi.fn()} onNewGroup={vi.fn()} />);
 
-    await user.type(screen.getByPlaceholderText(/name or phone/i), "+15559998888");
+    await user.type(screen.getByPlaceholderText(/name, username, or number/i), "+15559998888");
     await user.click(await screen.findByRole("button", { name: /add.*\+1/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/not on signal/i);
   });
 
-  it("closes on the close button", async () => {
+  it("goes back to the list on the back chevron", async () => {
     const user = userEvent.setup();
-    const onClose = vi.fn();
+    const onBack = vi.fn();
     mockApi({ "/api/contacts": [] });
-    render(<NewChatModal onClose={onClose} />);
+    render(<NewChatPanel onBack={onBack} onNewGroup={vi.fn()} />);
 
-    await user.click(screen.getByRole("button", { name: /close/i }));
-    expect(onClose).toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: /back/i }));
+    expect(onBack).toHaveBeenCalled();
+  });
+
+  it("offers the three shortcut rows the app shows", async () => {
+    mockApi({ "/api/contacts": [] });
+    render(<NewChatPanel onBack={vi.fn()} onNewGroup={vi.fn()} />);
+
+    expect(await screen.findByText("New group")).toBeInTheDocument();
+    expect(screen.getByText("Find by username")).toBeInTheDocument();
+    expect(screen.getByText("Find by phone number")).toBeInTheDocument();
+  });
+
+  it("hands off to the group composer", async () => {
+    const user = userEvent.setup();
+    const onNewGroup = vi.fn();
+    mockApi({ "/api/contacts": [] });
+    render(<NewChatPanel onBack={vi.fn()} onNewGroup={onNewGroup} />);
+
+    await user.click(await screen.findByText("New group"));
+    expect(onNewGroup).toHaveBeenCalled();
   });
 });

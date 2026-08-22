@@ -19,11 +19,16 @@ export function ConversationList({ conversations, meId, activeId, query }: Props
 
   if (visible.length === 0) {
     return (
-      <p className="px-6 py-10 text-center text-body2 text-label-2">
-        {query.trim()
-          ? `No results for "${query.trim()}"`
-          : "No conversations yet. Start one with the pencil above."}
-      </p>
+      <div className="px-6 py-16 text-center">
+        <p className="text-body1 font-semibold text-label">
+          {query.trim() ? "No results" : "No chats"}
+        </p>
+        <p className="mt-1 text-body2 text-label-2">
+          {query.trim()
+            ? `Nothing matched "${query.trim()}"`
+            : "Recent chats will appear here."}
+        </p>
+      </div>
     );
   }
 
@@ -68,6 +73,7 @@ function Row({
         <Avatar
           name={title}
           color={conversation.type === "group" ? conversation.avatar_color : counterpart?.avatar_color}
+          fg={conversation.type === "group" ? conversation.avatar_fg : counterpart?.avatar_fg}
           url={conversation.avatar_url ?? counterpart?.avatar_url}
           online={counterpart?.online ?? false}
         />

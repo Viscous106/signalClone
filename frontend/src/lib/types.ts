@@ -6,7 +6,10 @@ export type User = {
   username: string | null;
   display_name: string;
   avatar_url: string | null;
+  /** Pale fill. */
   avatar_color: string;
+  /** Initials colour — a strong version of the same hue. */
+  avatar_fg: string;
   about: string | null;
   last_seen_at: string | null;
   created_at: string;
@@ -20,6 +23,7 @@ export type UserBrief = {
   username?: string | null;
   avatar_url: string | null;
   avatar_color: string;
+  avatar_fg: string;
   about: string | null;
   last_seen_at: string | null;
   online: boolean;
@@ -58,6 +62,7 @@ export type Conversation = {
   name: string | null;
   avatar_url: string | null;
   avatar_color: string | null;
+  avatar_fg: string | null;
   created_by: number | null;
   created_at: string;
   last_message_at: string;

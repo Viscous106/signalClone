@@ -18,17 +18,35 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-# Signal assigns each contact a deterministic colour, used behind initials when
-# there is no avatar image. See docs/SIGNAL-UI-REFERENCE.md.
-AVATAR_COLORS = (
-    "#336BA3", "#6F6A58", "#CF163E", "#3B7845", "#6058CA", "#AA377A",
-    "#71717F", "#8F616A", "#077D92", "#C73F0A", "#9932C8", "#1D8663",
-)
+# Signal gives every contact a deterministic *pair*: a pale fill with the
+# initials in a strong version of the same hue. Never white initials on a
+# saturated circle. See docs/UI-SPEC.md.
+AVATAR_PALETTE: dict[str, tuple[str, str]] = {
+    "A100": ("#E3E3FE", "#3838F5"),
+    "A110": ("#DDE7FC", "#1251D3"),
+    "A120": ("#D8E8F0", "#086DA0"),
+    "A130": ("#CDE4CD", "#067906"),
+    "A140": ("#EAE0FD", "#661AFF"),
+    "A150": ("#F5E3FE", "#9F00F0"),
+    "A160": ("#F6D8EC", "#B8057C"),
+    "A170": ("#F5D7D7", "#BE0404"),
+    "A180": ("#FEF5D0", "#836B01"),
+    "A190": ("#EAE6D5", "#7D6F40"),
+    "A200": ("#D2D2DC", "#4F4F6D"),
+    "A210": ("#D7D7D9", "#5C5C5C"),
+}
+AVATAR_TOKENS = tuple(AVATAR_PALETTE)
+FALLBACK_TOKEN = "A210"
 
 
-def pick_avatar_color(seed: str) -> str:
-    """Stable colour for a given identity — same user always gets the same one."""
-    return AVATAR_COLORS[sum(seed.encode()) % len(AVATAR_COLORS)]
+def pick_avatar_token(seed: str) -> str:
+    """Stable palette token for an identity — the same seed always maps here."""
+    return AVATAR_TOKENS[sum(seed.encode()) % len(AVATAR_TOKENS)]
+
+
+def avatar_pair(token: str | None) -> tuple[str, str]:
+    """(fill, initials) for a token, tolerating anything unrecognised."""
+    return AVATAR_PALETTE.get(token or "", AVATAR_PALETTE[FALLBACK_TOKEN])
 
 
 def utcnow() -> datetime:
@@ -47,9 +65,9 @@ class User(Base):
     username: Mapped[Optional[str]] = mapped_column(String(64), unique=True)
     display_name: Mapped[str] = mapped_column(String(128))
     avatar_url: Mapped[Optional[str]] = mapped_column(String(512))
-    avatar_color: Mapped[str] = mapped_column(
-        String(7),
-        default=lambda ctx: pick_avatar_color(
+    avatar_token: Mapped[str] = mapped_column(
+        String(8),
+        default=lambda ctx: pick_avatar_token(
             str(ctx.get_current_parameters().get("phone") or "")
         ),
     )
@@ -104,7 +122,7 @@ class Conversation(Base):
     type: Mapped[str] = mapped_column(String(16))
     name: Mapped[Optional[str]] = mapped_column(String(128))
     avatar_url: Mapped[Optional[str]] = mapped_column(String(512))
-    avatar_color: Mapped[Optional[str]] = mapped_column(String(7))
+    avatar_token: Mapped[Optional[str]] = mapped_column(String(8))
     created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     # Denormalised so the sidebar can sort without touching `messages`.

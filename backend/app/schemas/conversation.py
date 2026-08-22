@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from app.core.config import get_settings
+from app.db.models import avatar_pair
 from app.schemas.common import NonBlank
 
 
@@ -16,9 +17,21 @@ class UserBrief(BaseModel):
     phone: str
     username: str | None = None
     avatar_url: str | None
-    avatar_color: str
+    avatar_token: str
     about: str | None
     last_seen_at: datetime | None
+
+    @computed_field
+    @property
+    def avatar_color(self) -> str:
+        """The pale fill."""
+        return avatar_pair(self.avatar_token)[0]
+
+    @computed_field
+    @property
+    def avatar_fg(self) -> str:
+        """The initials, in a strong version of the same hue."""
+        return avatar_pair(self.avatar_token)[1]
 
     @computed_field
     @property
@@ -64,8 +77,19 @@ class ConversationOut(BaseModel):
     type: str
     name: str | None
     avatar_url: str | None
-    avatar_color: str | None
+    avatar_token: str | None
     created_by: int | None
+
+    @computed_field
+    @property
+    def avatar_color(self) -> str:
+        return avatar_pair(self.avatar_token)[0]
+
+    @computed_field
+    @property
+    def avatar_fg(self) -> str:
+        return avatar_pair(self.avatar_token)[1]
+
     created_at: datetime
     last_message_at: datetime
     # Read from the model's flattened property, but serialised as "members".

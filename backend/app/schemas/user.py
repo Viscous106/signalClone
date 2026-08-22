@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
 
+from app.db.models import avatar_pair
 from app.schemas.common import NonBlank
 
 
@@ -13,10 +14,20 @@ class UserOut(BaseModel):
     username: str | None
     display_name: str
     avatar_url: str | None
-    avatar_color: str
+    avatar_token: str
     about: str | None
     last_seen_at: datetime | None
     created_at: datetime
+
+    @computed_field
+    @property
+    def avatar_color(self) -> str:
+        return avatar_pair(self.avatar_token)[0]
+
+    @computed_field
+    @property
+    def avatar_fg(self) -> str:
+        return avatar_pair(self.avatar_token)[1]
 
 
 class UserUpdate(BaseModel):

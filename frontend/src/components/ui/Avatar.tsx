@@ -2,17 +2,25 @@ import { initials } from "@/lib/format";
 
 type Props = {
   name: string;
+  /** The pale fill. */
   color?: string | null;
+  /** The initials, in a strong version of the same hue. */
+  fg?: string | null;
   url?: string | null;
   size?: number;
   online?: boolean;
 };
 
+// Signal's neutral pair (A210), used when the server has not given us one.
+const FALLBACK_FILL = "#D7D7D9";
+const FALLBACK_INK = "#5C5C5C";
+
 /**
- * Circular avatar: photo if there is one, otherwise initials on the colour the
- * server assigned. Signal gives every contact a stable colour.
+ * Circular avatar: photo if there is one, otherwise initials on the pale fill
+ * the server assigned. Signal never renders white initials on a saturated
+ * circle — the fill is a tint and the letters carry the colour.
  */
-export function Avatar({ name, color, url, size = 48, online = false }: Props) {
+export function Avatar({ name, color, fg, url, size = 48, online = false }: Props) {
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       {url ? (
@@ -20,13 +28,19 @@ export function Avatar({ name, color, url, size = 48, online = false }: Props) {
         <img
           src={url}
           alt=""
+          role="presentation"
           className="h-full w-full rounded-full object-cover"
         />
       ) : (
         <div
+          data-testid="avatar-initials"
           aria-hidden="true"
-          className="flex h-full w-full items-center justify-center rounded-full font-medium text-white"
-          style={{ backgroundColor: color ?? "#71717F", fontSize: Math.round(size * 0.4) }}
+          className="flex h-full w-full items-center justify-center rounded-full font-medium"
+          style={{
+            backgroundColor: color || FALLBACK_FILL,
+            color: fg || FALLBACK_INK,
+            fontSize: Math.round(size * 0.4),
+          }}
         >
           {initials(name)}
         </div>

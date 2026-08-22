@@ -7,7 +7,7 @@ the membership and admin rules live here.
 
 from sqlalchemy.orm import Session
 
-from app.db.models import Conversation, ConversationMember, Message, User, pick_avatar_color
+from app.db.models import Conversation, ConversationMember, Message, User, pick_avatar_token
 
 ADMIN = "admin"
 MEMBER = "member"
@@ -51,7 +51,7 @@ def create(db: Session, creator: User, name: str, member_ids: list[int]) -> Conv
         type="group",
         name=name,
         created_by=creator.id,
-        avatar_color=pick_avatar_color(name),
+        avatar_token=pick_avatar_token(name),
     )
     db.add(conversation)
     db.flush()

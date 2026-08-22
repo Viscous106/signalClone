@@ -25,6 +25,8 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Leave the API rewrites, Next internals, and static files alone.
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  // Leave alone: the API rewrites, Next internals, and anything with a file
+  // extension. Without the dot rule, /icon.svg was redirected to /login and
+  // signed-out visitors got no favicon.
+  matcher: ["/((?!api|_next/static|_next/image|.*\\.).*)"],
 };

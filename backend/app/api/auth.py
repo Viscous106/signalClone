@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Response, status
 from app.core.config import get_settings
 from app.core.deps import DbSession
 from app.core.security import SESSION_COOKIE, create_access_token, verify_otp
-from app.db.models import User, pick_avatar_color
+from app.db.models import User, pick_avatar_token
 from app.schemas.auth import AuthStartRequest, AuthStartResponse, AuthVerifyRequest
 from app.schemas.user import UserOut
 
@@ -48,7 +48,7 @@ def verify(payload: AuthVerifyRequest, db: DbSession, response: Response) -> Use
         user = User(
             phone=payload.phone,
             display_name=payload.display_name,
-            avatar_color=pick_avatar_color(payload.phone),
+            avatar_token=pick_avatar_token(payload.phone),
         )
         db.add(user)
 

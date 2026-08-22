@@ -99,7 +99,12 @@ export function GroupInfoModal({ conversation, meId, onClose }: Props) {
         </header>
 
         <div className="flex flex-col items-center gap-2 px-4 py-5">
-          <Avatar name={conversation.name ?? "Group"} color={conversation.avatar_color} size={64} />
+          <Avatar
+            name={conversation.name ?? "Group"}
+            color={conversation.avatar_color}
+            fg={conversation.avatar_fg}
+            size={64}
+          />
           {iAmAdmin ? (
             <div className="mt-2 w-full">
               <label htmlFor="rename" className="mb-1 block text-subtitle text-label-2">
@@ -137,6 +142,7 @@ export function GroupInfoModal({ conversation, meId, onClose }: Props) {
               <Avatar
                 name={m.user.display_name}
                 color={m.user.avatar_color}
+                fg={m.user.avatar_fg}
                 url={m.user.avatar_url}
                 size={32}
                 online={m.user.online}
@@ -194,6 +200,7 @@ export function GroupInfoModal({ conversation, meId, onClose }: Props) {
                   <Avatar
                     name={person.display_name}
                     color={person.avatar_color}
+                fg={person.avatar_fg}
                     url={person.avatar_url}
                     size={32}
                   />
