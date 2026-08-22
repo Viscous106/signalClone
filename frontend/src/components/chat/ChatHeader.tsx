@@ -33,7 +33,10 @@ export function ChatHeader({
           : counterpart?.phone ?? "";
 
   return (
-    <header className="flex h-header shrink-0 items-center gap-2 border-b border-edge px-2 md:gap-3 md:px-4">
+    <header
+      aria-label="Conversation"
+      className="flex h-header shrink-0 items-center gap-2 border-b border-edge px-2 md:gap-3 md:px-4"
+    >
       {/* On a phone the thread replaces the list, so it needs a way back. */}
       <Link
         href="/"

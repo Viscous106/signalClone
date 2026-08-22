@@ -33,7 +33,7 @@ export function Sidebar({ meId, activeId }: { meId: number; activeId: number | n
 
       {view === "chats" && (
         <>
-          <header className="flex h-header shrink-0 items-center justify-between pl-4 pr-2">
+          <header aria-label="Chats" className="flex h-header shrink-0 items-center justify-between pl-4 pr-2">
             <h1 className="text-title2 font-semibold text-label">Chats</h1>
             <div className="flex items-center">
               <button
