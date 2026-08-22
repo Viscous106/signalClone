@@ -7,7 +7,7 @@
  * API on a sibling subdomain for the cookie to be sent.
  */
 
-import type { Message } from "./types";
+import type { Conversation, Message } from "./types";
 
 export type ServerEvent =
   | { type: "ready"; payload: { user_id: number } }
@@ -24,7 +24,9 @@ export type ServerEvent =
   | {
       type: "presence";
       payload: { user_id: number; online: boolean; last_seen_at?: string };
-    };
+    }
+  | { type: "conversation.updated"; payload: Conversation }
+  | { type: "conversation.removed"; payload: { conversation_id: number } };
 
 export type ClientEvent =
   | { type: "ping"; payload: Record<string, never> }

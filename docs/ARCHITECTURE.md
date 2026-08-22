@@ -63,9 +63,15 @@ blocking SQLAlchemy calls never sit on the loop.
 | `message.status` | message_id, status, user_id | ✓ → ✓✓ → blue ✓✓ |
 | `typing` | conversation_id, user_id, is_typing | typing dots |
 | `presence` | user_id, online, last_seen | sidebar + chat header |
-| `conversation.updated` | conversation | rename, member change, new group |
+| `conversation.updated` | conversation | rename, member change, added to a group |
+| `conversation.removed` | conversation_id | you were removed, or you left |
 
 **Client → server**: `typing` (start/stop), `ping` (keepalive).
+
+`conversation.updated` is one payload broadcast to every member, so it cannot
+carry per-person state — it always arrives with `last_message: null` and
+`unread_count: 0`. The client merges only the structural fields over what it
+already holds; taking it wholesale would blank the sidebar for everyone.
 
 Reconnect: exponential backoff to 10s max. On reconnect the client refetches the conversation list, so nothing missed while offline is lost.
 

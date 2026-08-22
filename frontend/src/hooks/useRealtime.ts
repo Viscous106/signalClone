@@ -46,6 +46,12 @@ export function useRealtime(meId: number | undefined) {
             .getState()
             .setTyping(event.payload.conversation_id, event.payload.user_id, event.payload.is_typing);
           break;
+        case "conversation.updated":
+          useConversations.getState().applyUpdate(event.payload);
+          break;
+        case "conversation.removed":
+          useConversations.getState().remove(event.payload.conversation_id);
+          break;
         case "presence":
           useConversations
             .getState()

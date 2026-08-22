@@ -10,10 +10,12 @@ export function ChatHeader({
   conversation,
   meId,
   typingLabel,
+  onOpenInfo,
 }: {
   conversation: Conversation;
   meId: number;
   typingLabel: string | null;
+  onOpenInfo?: () => void;
 }) {
   const title = conversationTitle(conversation, meId);
   const counterpart = otherMember(conversation, meId);
@@ -37,10 +39,21 @@ export function ChatHeader({
         url={conversation.avatar_url ?? counterpart?.avatar_url}
         online={counterpart?.online ?? false}
       />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-body1 font-semibold text-label">{title}</p>
-        <p className="truncate text-body2 text-label-2">{subtitle}</p>
-      </div>
+      {conversation.type === "group" && onOpenInfo ? (
+        <button
+          onClick={onOpenInfo}
+          className="min-w-0 flex-1 text-left"
+          aria-label="Group info"
+        >
+          <p className="truncate text-body1 font-semibold text-label">{title}</p>
+          <p className="truncate text-body2 text-label-2">{subtitle}</p>
+        </button>
+      ) : (
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-body1 font-semibold text-label">{title}</p>
+          <p className="truncate text-body2 text-label-2">{subtitle}</p>
+        </div>
+      )}
 
       {/* Calling and in-chat search are out of scope; kept visible for fidelity. */}
       <div className="flex items-center gap-1 text-label-2">

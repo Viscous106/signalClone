@@ -9,8 +9,10 @@ type ConversationState = {
   load: () => Promise<void>;
   upsert: (conversation: Conversation) => void;
   applyMessage: (message: Message, meId: number) => void;
+  applyUpdate: (conversation: Conversation) => void;
   applyPresence: (userId: number, online: boolean, lastSeenAt?: string) => void;
   clearUnread: (conversationId: number) => void;
+  remove: (conversationId: number) => void;
 };
 
 export const useConversations = create<ConversationState>((set, get) => ({
@@ -58,6 +60,32 @@ export const useConversations = create<ConversationState>((set, get) => ({
     set({ items });
   },
 
+  /**
+   * A conversation's shape changed — renamed, or members added or removed.
+   *
+   * The broadcast is one payload for every member, so it cannot carry
+   * per-person state: it always arrives with `last_message: null` and
+   * `unread_count: 0`. Taking it wholesale would blank the sidebar for
+   * everyone, so structural fields are merged over whatever we already hold.
+   */
+  applyUpdate: (conversation) => {
+    const existing = get().items.find((c) => c.id === conversation.id);
+    if (!existing) {
+      // Newly added to a group: keep it, and the system message that follows
+      // will fill in the preview.
+      get().upsert(conversation);
+      return;
+    }
+    const merged = {
+      ...existing,
+      name: conversation.name,
+      avatar_url: conversation.avatar_url,
+      avatar_color: conversation.avatar_color,
+      members: conversation.members,
+    };
+    set({ items: get().items.map((c) => (c.id === merged.id ? merged : c)) });
+  },
+
   applyPresence: (userId, online, lastSeenAt) => {
     set({
       items: get().items.map((conversation) => ({
@@ -69,6 +97,11 @@ export const useConversations = create<ConversationState>((set, get) => ({
         ),
       })),
     });
+  },
+
+  /** Drop a conversation I am no longer in. */
+  remove: (conversationId) => {
+    set({ items: get().items.filter((c) => c.id !== conversationId) });
   },
 
   clearUnread: (conversationId) => {

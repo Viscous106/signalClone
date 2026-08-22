@@ -27,12 +27,12 @@ Base `/api`. JSON in, JSON out. Auth via JWT in an httpOnly cookie; `401` when a
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/conversations` | sorted by `last_message_at` desc; each row carries `last_message`, `unread_count`, `members` |
-| POST | `/conversations` | direct: `{user_id}` — returns the existing chat if there is one, so the sidebar cannot fill with duplicates. Group (`{name, member_ids[]}`) arrives in Phase 4 |
+| POST | `/conversations` | direct: `{user_id}` — returns the existing chat if there is one, so the sidebar cannot fill with duplicates. Group: `{name, member_ids[]}` — never deduplicated, two groups may share a name |
 | GET | `/conversations/{id}` | detail + members |
-| PATCH | `/conversations/{id}` | rename group — admin only |
-| GET | `/conversations/{id}/members` | |
-| POST | `/conversations/{id}/members` | `{user_ids[]}` — admin only, writes a system message |
-| DELETE | `/conversations/{id}/members/{user_id}` | admin only, or self to leave |
+| PATCH | `/conversations/{id}` | `{name}` — rename a group. Admin only (`403`), groups only (`400`), blank rejected (`422`) |
+| GET | `/conversations/{id}/members` | `[{role, joined_at, last_read_message_id, user}]`, oldest first. Members only |
+| POST | `/conversations/{id}/members` | `{user_ids[]}` — admin only. Already-members are skipped; returns the full roster |
+| DELETE | `/conversations/{id}/members/{user_id}` | Admin removes anyone; **anyone may remove themselves** to leave. `404` if they are not in the group |
 
 ## Messages
 | Method | Path | Notes |
@@ -46,6 +46,23 @@ Base `/api`. JSON in, JSON out. Auth via JWT in an httpOnly cookie; `401` when a
 `GET /ws` — one socket per tab, authenticated by the session cookie (no token
 in the query string). Event contract in
 [ARCHITECTURE.md](./ARCHITECTURE.md#realtime).
+
+## Group rules
+
+- **Membership is the authorisation** for every conversation route; the admin
+  role gates only add, remove and rename.
+- Every change writes a `type='system'` message into the thread ("Alice added
+  Bob", "Bob left the group"), which becomes the sidebar preview and bumps the
+  conversation's sort position.
+- **System notices never contribute to `unread_count`.** They belong in the
+  thread and the preview, but badging them would mean every membership change
+  nags everyone.
+- **If the last admin leaves, the longest-standing remaining member is
+  promoted.** A group with no admin could never be administered again.
+- New members can read the full history — there is no per-member visibility
+  window.
+- A group message stays at `sent` until *every* other member has it, and only
+  reaches `read` when every one of them has read it.
 
 ## Notes on the list endpoint
 

@@ -59,6 +59,10 @@ def _unread_counts(db: Session, conversation_ids: list[int], user_id: int) -> di
             Message.conversation_id.in_(conversation_ids),
             Message.id > ConversationMember.last_read_message_id,
             Message.deleted_at.is_(None),
+            # "Alice added Bob" is not an unread message. It belongs in the
+            # thread and in the sidebar preview, but badging it would mean
+            # every group change nags everyone.
+            Message.type != "system",
             # My own messages are never unread to me.
             or_(Message.sender_id.is_(None), Message.sender_id != user_id),
         )

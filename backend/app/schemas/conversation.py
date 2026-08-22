@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from app.core.config import get_settings
+from app.schemas.common import NonBlank
 
 
 class UserBrief(BaseModel):
@@ -73,12 +74,31 @@ class ConversationOut(BaseModel):
     unread_count: int = 0
 
 
+class MemberOut(BaseModel):
+    """A membership row: who, and what they may do."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    role: str
+    joined_at: datetime
+    last_read_message_id: int
+    user: UserBrief
+
+
 class ConversationCreate(BaseModel):
     # Exactly one shape: a direct chat with `user_id`, or a group with
     # `name` + `member_ids`.
     user_id: int | None = None
     name: str | None = None
     member_ids: list[int] | None = None
+
+
+class ConversationUpdate(BaseModel):
+    name: NonBlank
+
+
+class AddMembersRequest(BaseModel):
+    user_ids: list[int]
 
 
 class MarkReadRequest(BaseModel):

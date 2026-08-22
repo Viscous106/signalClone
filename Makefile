@@ -54,7 +54,12 @@ db: ## Create the database and seed it (safe to re-run)
 	@echo "==> $(DB)"
 	@cd $(BACKEND) && .venv/bin/python -m app.cli init
 
-remove-db: ## Delete the database file
+remove-db: ## Delete the database file (stop the server first)
+	@if ss -tln 2>/dev/null | grep -q ':8000 '; then \
+		echo "Refusing: something is serving on :8000."; \
+		echo "SQLite keeps writing to a deleted file, so the running server would"; \
+		echo "silently diverge from the one you reseed. Stop it, then retry."; \
+		exit 1; fi
 	@if [ -f $(DB) ]; then \
 		echo "removing $(DB) ($$(du -h $(DB) | cut -f1))"; rm -f $(DB); \
 		else echo "no database at $(DB)"; fi

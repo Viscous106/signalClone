@@ -9,7 +9,13 @@ import { ApiError, api } from "@/lib/api";
 import { isValidPhone, toE164 } from "@/lib/phone";
 import type { Conversation, UserBrief } from "@/lib/types";
 
-export function NewChatModal({ onClose }: { onClose: () => void }) {
+export function NewChatModal({
+  onClose,
+  onNewGroup,
+}: {
+  onClose: () => void;
+  onNewGroup?: () => void;
+}) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [contacts, setContacts] = useState<UserBrief[]>([]);
@@ -109,6 +115,22 @@ export function NewChatModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="max-h-80 overflow-y-auto pb-2">
+          {!term && onNewGroup && (
+            <button
+              onClick={onNewGroup}
+              className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-surface"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-label-2">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <circle cx="9" cy="8" r="3.2" />
+                  <path d="M3.5 19a5.5 5.5 0 0 1 11 0" strokeLinecap="round" />
+                  <path d="M16 6.2a3 3 0 0 1 0 5.6M17.5 19a5.4 5.4 0 0 0-1.4-3.6" strokeLinecap="round" />
+                </svg>
+              </span>
+              <span className="text-body1 text-label">New group</span>
+            </button>
+          )}
+
           {!term && contacts.length > 0 && (
             <p className="px-4 py-1 text-caption font-semibold uppercase tracking-wide text-label-2">
               Contacts

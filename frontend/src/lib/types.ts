@@ -44,6 +44,14 @@ export type Message = {
   client_id?: string | null;
 };
 
+/** A membership row: who, and what they may do. */
+export type Member = {
+  role: "admin" | "member";
+  joined_at: string;
+  last_read_message_id: number;
+  user: UserBrief;
+};
+
 export type Conversation = {
   id: number;
   type: "direct" | "group";

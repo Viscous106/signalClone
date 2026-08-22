@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 
 import { ConversationList } from "@/components/sidebar/ConversationList";
 import { NewChatModal } from "@/components/sidebar/NewChatModal";
+import { NewGroupModal } from "@/components/sidebar/NewGroupModal";
 import { PencilIcon, SearchIcon } from "@/components/ui/icons";
 import { useConversations } from "@/store/conversations";
 
 export function Sidebar({ meId, activeId }: { meId: number; activeId: number | null }) {
   const { items, loading, load } = useConversations();
   const [query, setQuery] = useState("");
-  const [composing, setComposing] = useState(false);
+  const [composing, setComposing] = useState<"none" | "chat" | "group">("none");
 
   useEffect(() => {
     load();
@@ -21,7 +22,7 @@ export function Sidebar({ meId, activeId }: { meId: number; activeId: number | n
       <header className="flex h-header shrink-0 items-center justify-between px-4">
         <h1 className="text-title2 font-semibold text-label">Chats</h1>
         <button
-          onClick={() => setComposing(true)}
+          onClick={() => setComposing("chat")}
           aria-label="New chat"
           title="New chat"
           className="rounded-full p-2 text-label-2 hover:bg-surface hover:text-label"
@@ -56,7 +57,13 @@ export function Sidebar({ meId, activeId }: { meId: number; activeId: number | n
         )}
       </div>
 
-      {composing && <NewChatModal onClose={() => setComposing(false)} />}
+      {composing === "chat" && (
+        <NewChatModal
+          onClose={() => setComposing("none")}
+          onNewGroup={() => setComposing("group")}
+        />
+      )}
+      {composing === "group" && <NewGroupModal onClose={() => setComposing("none")} />}
     </aside>
   );
 }

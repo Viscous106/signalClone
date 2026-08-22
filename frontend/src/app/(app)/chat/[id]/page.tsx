@@ -1,9 +1,10 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { ChatHeader } from "@/components/chat/ChatHeader";
+import { GroupInfoModal } from "@/components/chat/GroupInfoModal";
 import { Composer } from "@/components/chat/Composer";
 import { MessageList } from "@/components/chat/MessageList";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
@@ -23,6 +24,7 @@ export default function ChatPage() {
   const upsert = useConversations((s) => s.upsert);
   const clearUnread = useConversations((s) => s.clearUnread);
 
+  const [showInfo, setShowInfo] = useState(false);
   const messages = useMessages((s) => s.byConversation[conversationId]);
   const typingIds = useMessages((s) => s.typingBy[conversationId] ?? []);
   const { load, send, markRead } = useMessages();
@@ -61,6 +63,7 @@ export default function ChatPage() {
         conversation={conversation}
         meId={me.id}
         typingLabel={typist ? typist.display_name.split(/\s+/)[0] : null}
+        onOpenInfo={() => setShowInfo(true)}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -77,6 +80,14 @@ export default function ChatPage() {
         onSend={(body) => send(conversationId, body, me.id)}
         onTyping={(isTyping) => sendTyping(conversationId, isTyping)}
       />
+
+      {showInfo && conversation.type === "group" && (
+        <GroupInfoModal
+          conversation={conversation}
+          meId={me.id}
+          onClose={() => setShowInfo(false)}
+        />
+      )}
     </div>
   );
 }
