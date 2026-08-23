@@ -45,6 +45,7 @@ const conversation = (over: Partial<Conversation> = {}): Conversation => ({
   members: [alice, bob],
   last_message: null,
   unread_count: 0,
+  disappear_seconds: 0,
   ...over,
 });
 

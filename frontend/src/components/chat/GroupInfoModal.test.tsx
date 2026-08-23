@@ -45,6 +45,7 @@ const group: Conversation = {
   members: [alice, bob, carol],
   last_message: null,
   unread_count: 0,
+  disappear_seconds: 0,
 };
 
 function mockApi(routes: Record<string, unknown>) {

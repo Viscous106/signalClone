@@ -6,7 +6,7 @@
  * run on separate ports; cookies ignore port, so that works too.
  */
 
-import type { Conversation, Message } from "./types";
+import type { Conversation, Message, Reaction } from "./types";
 
 export type ServerEvent =
   | { type: "ready"; payload: { user_id: number } }
@@ -15,6 +15,10 @@ export type ServerEvent =
   | {
       type: "message.status";
       payload: { message_id: number; conversation_id: number; status: string };
+    }
+  | {
+      type: "message.reactions";
+      payload: { message_id: number; conversation_id: number; reactions: Reaction[] };
     }
   | {
       type: "typing";

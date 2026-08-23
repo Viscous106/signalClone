@@ -3,6 +3,7 @@
  * in the API, so the server stays structural and these stay testable.
  */
 
+import { attachmentSummary } from "./attachments";
 import type { Conversation, UserBrief } from "./types";
 
 /** The counterpart in a one-to-one chat. Null for groups — they have none. */
@@ -37,15 +38,18 @@ export function previewText(conversation: Conversation, meId: number): string {
   // System messages ("Alice added Bob") already name their subject.
   if (message.type === "system") return message.body;
 
-  if (message.sender_id === meId) return `You: ${message.body}`;
+  // An image with no caption still needs a line: "Photo" beats blank.
+  const body = message.body || attachmentSummary(message.attachments ?? []);
+
+  if (message.sender_id === meId) return `You: ${body}`;
 
   // Signal names the sender in groups, but not in a one-to-one chat where
   // there is only one other person it could be.
   if (conversation.type === "group") {
     const name = message.sender?.display_name;
-    if (name) return `${firstName(name)}: ${message.body}`;
+    if (name) return `${firstName(name)}: ${body}`;
   }
-  return message.body;
+  return body;
 }
 
 /**

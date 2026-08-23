@@ -40,6 +40,7 @@ const conversation: Conversation = {
   members: [me, bob],
   last_message: null,
   unread_count: 0,
+  disappear_seconds: 0,
 };
 
 let errors: string[] = [];

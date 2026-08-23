@@ -34,9 +34,20 @@ def _last_message_per_conversation(db: Session, conversation_ids: list[int]) -> 
     messages = (
         db.query(Message)
         .filter(Message.id.in_(newest_ids))
-        .options(joinedload(Message.sender))
+        .options(
+            joinedload(Message.sender),
+            # The preview serialises through MessageOut, which reads both of
+            # these. Without eager loading they lazy-load per row and the
+            # statement count grows with the sidebar.
+            selectinload(Message.attachments),
+            selectinload(Message.reactions),
+        )
         .all()
     )
+    for message in messages:
+        # A sidebar preview has no room for pills, and grouping them per row
+        # would cost another query. The thread is where reactions are read.
+        message.reaction_pills = []
     return {m.conversation_id: m for m in messages}
 
 

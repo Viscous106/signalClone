@@ -78,6 +78,7 @@ const conversation: Conversation = {
   members: [person(1, "Alice Chen"), bob],
   last_message: null,
   unread_count: 0,
+  disappear_seconds: 0,
 };
 
 describe("opening a conversation", () => {

@@ -108,3 +108,45 @@ export function StarIcon({ className = "h-5 w-5", filled = false }: IconProps & 
     </svg>
   );
 }
+
+/** Paperclip, for the attachment picker. */
+export function AttachIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path
+        d="M20.5 11.5 12 20a5 5 0 0 1-7-7l7.6-7.6a3.4 3.4 0 0 1 4.8 4.8l-7.6 7.6a1.8 1.8 0 0 1-2.5-2.5l7-7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Hourglass, for the disappearing-message timer. */
+export function TimerIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M7 3h10M7 21h10M8 3v3.5a4 4 0 0 0 1.6 3.2L12 12l-2.4 2.3A4 4 0 0 0 8 17.5V21M16 3v3.5a4 4 0 0 1-1.6 3.2L12 12l2.4 2.3a4 4 0 0 1 1.6 3.2V21" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Curved arrow, for replying to a message. */
+export function ReplyIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M9 7 4 12l5 5M4 12h9a6 6 0 0 1 6 6v1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Smiley with a plus, for opening the reaction tray. */
+export function ReactIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M20.9 12.7A9 9 0 1 1 11.3 3.1" strokeLinecap="round" />
+      <path d="M8.5 14.5a4.5 4.5 0 0 0 6.6.4" strokeLinecap="round" />
+      <path d="M9 9.5h.01M14.5 9h.01M18 3v5M15.5 5.5h5" strokeLinecap="round" />
+    </svg>
+  );
+}

@@ -18,6 +18,7 @@ const conv = (id: number, unread: number): Conversation => ({
   members: [],
   last_message: null,
   unread_count: unread,
+  disappear_seconds: 0,
 });
 
 describe("useUnreadTitle", () => {

@@ -131,6 +131,9 @@ class Conversation(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     # Denormalised so the sidebar can sort without touching `messages`.
     last_message_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    # Disappearing messages: seconds to live, or 0 for off. Conversation-wide
+    # and visible to everyone, exactly as Signal has it.
+    disappear_seconds: Mapped[int] = mapped_column(Integer, default=0)
 
     members: Mapped[list["ConversationMember"]] = relationship(
         back_populates="conversation", cascade="all, delete-orphan"
@@ -194,6 +197,10 @@ class Message(Base):
     edited_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     # Soft delete so "This message was deleted" can render in place.
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    # Stamped at send time from the conversation's timer. Null means it stays.
+    # A fixed stamp rather than a countdown started on read: the whole thread
+    # then expires identically for everyone, which is what makes it auditable.
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), index=True)
 
     conversation: Mapped["Conversation"] = relationship(back_populates="messages")
     sender: Mapped[Optional["User"]] = relationship()
@@ -201,6 +208,68 @@ class Message(Base):
     receipts: Mapped[list["MessageReceipt"]] = relationship(
         back_populates="message", cascade="all, delete-orphan"
     )
+    attachments: Mapped[list["Attachment"]] = relationship(
+        back_populates="message",
+        cascade="all, delete-orphan",
+        order_by="Attachment.id",
+    )
+    reactions: Mapped[list["MessageReaction"]] = relationship(
+        back_populates="message", cascade="all, delete-orphan"
+    )
+
+
+class Attachment(Base):
+    """A file or image on a message.
+
+    The bytes are carried inline as a data URI, the same compromise the profile
+    photos make: there is no object storage in this build, and a base64 column
+    keeps the whole app deployable as one container. `MAX_ATTACHMENT_BYTES`
+    caps it so a large upload cannot exhaust the row.
+    """
+
+    __tablename__ = "attachments"
+    __table_args__ = (Index("ix_attachments_message", "message_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    message_id: Mapped[int] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"))
+    # Original filename, for the download link and the file chip.
+    name: Mapped[str] = mapped_column(String(255))
+    mime: Mapped[str] = mapped_column(String(127))
+    # Decoded size in bytes, so the client can label a chip without decoding.
+    size: Mapped[int] = mapped_column(Integer)
+    data_url: Mapped[str] = mapped_column(Text)
+    # Images render inline; everything else becomes a download chip.
+    width: Mapped[Optional[int]] = mapped_column(Integer)
+    height: Mapped[Optional[int]] = mapped_column(Integer)
+
+    message: Mapped["Message"] = relationship(back_populates="attachments")
+
+    @property
+    def is_image(self) -> bool:
+        return self.mime.startswith("image/")
+
+
+class MessageReaction(Base):
+    """One emoji from one person on one message.
+
+    Unique per (message, user): reacting again replaces, which is how Signal
+    behaves — a person holds one reaction per message, not a tally of many.
+    """
+
+    __tablename__ = "message_reactions"
+    __table_args__ = (
+        UniqueConstraint("message_id", "user_id", name="uq_reaction_pair"),
+        Index("ix_reactions_message", "message_id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    message_id: Mapped[int] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    emoji: Mapped[str] = mapped_column(String(16))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    message: Mapped["Message"] = relationship(back_populates="reactions")
+    user: Mapped["User"] = relationship()
 
 
 class MessageReceipt(Base):

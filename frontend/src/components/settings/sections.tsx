@@ -204,7 +204,7 @@ export function PrivacySection() {
       <SectionHeader>Disappearing messages</SectionHeader>
       <Row
         title="Default timer for new chats"
-        description="Set a default disappearing message timer for all new chats started by you."
+        description="Not yet available. To set a timer, open a chat and use the hourglass in its header — that applies to everyone in the conversation."
         control={<Select label="Default timer" value="Off" options={["Off"]} disabled />}
       />
       <Divider />

@@ -51,6 +51,7 @@ const conv = (over: Partial<Conversation> & { id: number }): Conversation => ({
   members: [alice, bob],
   last_message: null,
   unread_count: 0,
+  disappear_seconds: 0,
   ...over,
 });
 
@@ -63,6 +64,7 @@ const group = conv({
   members: [alice, bob, carol],
   last_message: msg(3, "I vote coast"),
   unread_count: 4,
+  disappear_seconds: 0,
 });
 
 const list = [group, withBob, withCarol];

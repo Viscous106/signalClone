@@ -1,15 +1,18 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { MobileTabs } from "@/components/rail/MobileTabs";
 import { NavRail } from "@/components/rail/NavRail";
+import { ShortcutsModal } from "@/components/ui/ShortcutsModal";
 import { Toaster } from "@/components/ui/Toaster";
 import { useRealtime } from "@/hooks/useRealtime";
+import { useShortcuts } from "@/hooks/useShortcuts";
 import { useUnreadTitle } from "@/hooks/useUnreadTitle";
 import { mobilePane, showsChatList, showsTabBar } from "@/lib/shell";
 import { usePreferences } from "@/store/preferences";
+import { useConversations } from "@/store/conversations";
 import { useFavorites } from "@/store/favorites";
 import { SidebarSlot } from "@/components/sidebar/SidebarSlot";
 import { loadCurrentUser } from "@/lib/session";
@@ -19,6 +22,66 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, setUser } = useSession();
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const conversations = useConversations((s) => s.items);
+
+  /** Alt+↑/↓ walks the sidebar in the order it is displayed. */
+  const step = useCallback(
+    (delta: number) => {
+      if (conversations.length === 0) return;
+      const current = new URLSearchParams(window.location.search).get("c");
+      const index = conversations.findIndex((c) => String(c.id) === current);
+      // Nowhere yet: ↓ opens the top of the list, ↑ opens the bottom.
+      const next =
+        index === -1
+          ? delta > 0
+            ? 0
+            : conversations.length - 1
+          : (index + delta + conversations.length) % conversations.length;
+      router.push(`/chat?c=${conversations[next].id}`);
+    },
+    [conversations, router]
+  );
+
+  const handlers = useMemo(
+    () => ({
+      help: () => setShowShortcuts((open) => !open),
+      search: () => {
+        // The search box owns focus; the shortcut only points at it.
+        const box = document.querySelector<HTMLInputElement>(
+          'input[aria-label="Search conversations"]'
+        );
+        box?.focus();
+        box?.select();
+      },
+      "new-chat": () => {
+        router.push("/");
+        document.querySelector<HTMLButtonElement>('button[aria-label="New chat"]')?.click();
+      },
+      settings: () => router.push("/settings"),
+      "next-chat": () => step(1),
+      "previous-chat": () => step(-1),
+      close: () => {
+        if (showShortcuts) {
+          setShowShortcuts(false);
+          return;
+        }
+        // Escape in the search box clears it before it does anything else.
+        const box = document.querySelector<HTMLInputElement>(
+          'input[aria-label="Search conversations"]'
+        );
+        if (document.activeElement === box && box?.value) {
+          box.value = "";
+          box.dispatchEvent(new Event("input", { bubbles: true }));
+          return;
+        }
+        if (pathname.startsWith("/chat")) router.push("/");
+      },
+    }),
+    [router, step, showShortcuts, pathname]
+  );
+
+  useShortcuts(handlers);
 
   // One socket for the whole app, opened as soon as we know who we are.
   useRealtime(user?.id);
@@ -82,6 +145,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </section>
 
       {tabBar && <MobileTabs />}
+      {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
       <Toaster />
     </div>
   );

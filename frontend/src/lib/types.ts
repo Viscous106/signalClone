@@ -29,6 +29,37 @@ export type UserBrief = {
   online: boolean;
 };
 
+export type Attachment = {
+  id: number;
+  name: string;
+  mime: string;
+  /** Decoded bytes, so a chip can be labelled without decoding. */
+  size: number;
+  data_url: string;
+  width?: number | null;
+  height?: number | null;
+  is_image: boolean;
+};
+
+/** One emoji, grouped server-side so every client counts it the same way. */
+export type Reaction = {
+  emoji: string;
+  count: number;
+  names: string[];
+  /** Whether the count includes me. */
+  mine: boolean;
+};
+
+/** The flat snippet a reply shows above itself — never a nested Message. */
+export type Quote = {
+  id: number;
+  sender_id: number | null;
+  body: string;
+  deleted_at?: string | null;
+  sender_name?: string | null;
+  attachment_count: number;
+};
+
 export type Message = {
   id: number;
   conversation_id: number;
@@ -39,6 +70,11 @@ export type Message = {
   created_at: string;
   edited_at?: string | null;
   deleted_at?: string | null;
+  /** When this message vanishes, or null if it stays. */
+  expires_at?: string | null;
+  attachments?: Attachment[];
+  reactions?: Reaction[];
+  quote?: Quote | null;
   sender?: UserBrief | null;
   /** Tick state; only present on messages I sent. */
   status?: MessageStatus;
@@ -69,4 +105,6 @@ export type Conversation = {
   members: UserBrief[];
   last_message: Message | null;
   unread_count: number;
+  /** Disappearing-message timer in seconds; 0 is off. */
+  disappear_seconds: number;
 };

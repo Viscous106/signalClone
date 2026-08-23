@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { buildRows } from "@/lib/messages";
-import type { Message } from "@/lib/types";
+import type { Message, Quote } from "@/lib/types";
 
 import { EncryptionNotice } from "./EncryptionNotice";
 import { MessageBubble } from "./MessageBubble";
@@ -12,10 +12,12 @@ type Props = {
   messages: Message[];
   meId: number;
   isGroup: boolean;
+  onReply?: (quote: Quote) => void;
+  onReact?: (messageId: number, emoji: string) => void;
 };
 
 /** `messages` must be oldest first. */
-export function MessageList({ messages, meId, isGroup }: Props) {
+export function MessageList({ messages, meId, isGroup, onReply, onReact }: Props) {
   const bottom = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,6 +68,8 @@ export function MessageList({ messages, meId, isGroup }: Props) {
             groupEnd={row.groupEnd}
             // Only the first bubble of a run is labelled, and never in a 1:1.
             showSender={isGroup && !row.outgoing && row.groupStart}
+            onReply={onReply}
+            onReact={onReact}
           />
         )
       )}

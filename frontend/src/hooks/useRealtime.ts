@@ -41,6 +41,15 @@ export function useRealtime(meId: number | undefined) {
               event.payload.status as MessageStatus
             );
           break;
+        case "message.reactions":
+          useMessages
+            .getState()
+            .applyReactions(
+              event.payload.conversation_id,
+              event.payload.message_id,
+              event.payload.reactions
+            );
+          break;
         case "typing":
           useMessages
             .getState()

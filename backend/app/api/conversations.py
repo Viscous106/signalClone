@@ -16,9 +16,11 @@ from app.schemas.conversation import (
     MarkReadRequest,
     MemberOut,
     MessageOut,
+    DisappearingRequest,
 )
 from app.services import conversations as service
 from app.services import groups as group_service
+from app.services import disappearing
 from app.services import receipts as receipt_service
 from app.ws.manager import broadcast
 
@@ -166,6 +168,46 @@ def rename_conversation(
         .order_by(Message.id.desc())
         .first()
     )
+    _announce(request, db, conversation, notice)
+    return _bare(conversation)
+
+
+@router.patch("/{conversation_id}/disappearing", response_model=ConversationOut)
+def set_disappearing(
+    conversation_id: int,
+    payload: DisappearingRequest,
+    user: CurrentUser,
+    db: DbSession,
+    request: Request,
+) -> Conversation:
+    """Set the thread's disappearing-message timer.
+
+    Conversation-wide and announced in the thread, because a message quietly
+    given a lifetime by somebody else is a surprise nobody should get. In a
+    group this follows the same rule as renaming: admins only.
+    """
+    _require_membership(db, conversation_id, user)
+    conversation = db.get(Conversation, conversation_id)
+    seconds = disappearing.require_valid(payload.seconds)
+
+    if conversation.is_group:
+        _require_group_admin(db, conversation, user)
+
+    if conversation.disappear_seconds == seconds:
+        # Nothing changed, so nothing to announce.
+        return _bare(conversation)
+
+    conversation.disappear_seconds = seconds
+    notice = group_service.system_message(
+        db,
+        conversation,
+        f"{user.display_name} turned off disappearing messages"
+        if seconds == 0
+        else f"{user.display_name} set disappearing messages to {disappearing.label(seconds)}",
+    )
+    db.commit()
+    db.refresh(conversation)
+
     _announce(request, db, conversation, notice)
     return _bare(conversation)
 
