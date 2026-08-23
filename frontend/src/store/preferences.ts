@@ -22,12 +22,16 @@ function write(key: string, value: string) {
   if (typeof localStorage !== "undefined") localStorage.setItem(key, value);
 }
 
+/** What the OS is asking for right now. False anywhere it cannot be read. */
+export function prefersDark(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches === true;
+}
+
 /** Toggle the class the design tokens key off. */
 export function applyTheme(theme: Theme) {
   if (typeof document === "undefined") return;
-  const dark =
-    theme === "dark" ||
-    (theme === "system" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+  const dark = theme === "dark" || (theme === "system" && prefersDark());
   document.documentElement.classList.toggle("dark", Boolean(dark));
 }
 
@@ -38,6 +42,12 @@ type PreferencesState = {
   typingIndicators: boolean;
   /** Nav rail showing labels beside its icons. */
   railExpanded: boolean;
+  /**
+   * What "system" currently resolves to. Held in state rather than read at
+   * render so the quick toggle knows which way round it is looking, and so a
+   * component re-renders when the OS flips.
+   */
+  systemPrefersDark: boolean;
   setTheme: (theme: Theme) => void;
   setReadReceipts: (on: boolean) => void;
   setTypingIndicators: (on: boolean) => void;
@@ -50,6 +60,7 @@ export const usePreferences = create<PreferencesState>((set, get) => ({
   readReceipts: true,
   typingIndicators: true,
   railExpanded: false,
+  systemPrefersDark: false,
 
   setTheme: (theme) => {
     write(KEY.theme, theme);
@@ -81,9 +92,20 @@ export const usePreferences = create<PreferencesState>((set, get) => ({
     applyTheme(theme);
     set({
       theme,
+      systemPrefersDark: prefersDark(),
       readReceipts: read(KEY.readReceipts, true, (raw) => raw !== "false"),
       typingIndicators: read(KEY.typingIndicators, true, (raw) => raw !== "false"),
       railExpanded: read(KEY.railExpanded, false, (raw) => raw === "true"),
     });
+
+    // Follow the OS while "system" is selected, so switching the desktop to
+    // light does not leave this tab dark until a reload.
+    if (typeof window !== "undefined") {
+      const media = window.matchMedia?.("(prefers-color-scheme: dark)");
+      media?.addEventListener?.("change", (event: MediaQueryListEvent) => {
+        set({ systemPrefersDark: event.matches });
+        if (get().theme === "system") applyTheme("system");
+      });
+    }
   },
 }));

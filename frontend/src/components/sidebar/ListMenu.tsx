@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { ThemeMenuItem } from "@/components/ui/ThemeToggle";
+
+import { usePreferences } from "@/store/preferences";
+
 /** The chat list's overflow menu, matching the desktop app's items. */
 const PLACEHOLDERS = ["View Archive", "Add chat folder", "Notification profile"] as const;
 
@@ -15,6 +19,13 @@ export function ListMenu({
 }) {
   const [open, setOpen] = useState(false);
   const wrapper = useRef<HTMLDivElement>(null);
+
+  // The rail carries this on a desktop, but it is hidden on a phone — so the
+  // one menu a phone can reach needs it too.
+  const theme = usePreferences((s) => s.theme);
+  const systemPrefersDark = usePreferences((s) => s.systemPrefersDark);
+  const setTheme = usePreferences((s) => s.setTheme);
+  const showingDark = theme === "dark" || (theme === "system" && systemPrefersDark);
 
   useEffect(() => {
     if (!open) return;
@@ -63,6 +74,19 @@ export function ListMenu({
           >
             {unreadOnly ? "Show all chats" : "Filter unread chats"}
           </button>
+
+          <button
+            role="menuitem"
+            onClick={() => {
+              setTheme(showingDark ? "light" : "dark");
+              setOpen(false);
+            }}
+            className="block w-full px-4 py-2 text-left text-body2 text-label hover:bg-surface"
+          >
+            {showingDark ? "Switch to light mode" : "Switch to dark mode"}
+          </button>
+
+          <ThemeMenuItem onDone={() => setOpen(false)} />
 
           {PLACEHOLDERS.map((label) => (
             <button

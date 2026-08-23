@@ -21,6 +21,14 @@ describe("match", () => {
     expect(match(press({ key: "?", ctrlKey: true }))).toBe("help");
   });
 
+  it("switches theme on Ctrl+Shift+D", () => {
+    expect(match(press({ key: "D", ctrlKey: true, shiftKey: true }))).toBe("theme");
+  });
+
+  it("does not take Ctrl+D without shift", () => {
+    expect(match(press({ key: "d", ctrlKey: true }))).toBeNull();
+  });
+
   it("is case insensitive, so Caps Lock does not break it", () => {
     expect(match(press({ key: "K", ctrlKey: true }))).toBe("search");
   });
@@ -93,6 +101,30 @@ describe("displayKeys", () => {
 });
 
 describe("the sheet and the handler cannot drift", () => {
+  it("lists each shortcut once — a duplicate id means a row nothing fires", () => {
+    const ids = SHORTCUTS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("binds every row in the sheet to a real key press", () => {
+    // A row whose keys no press produces is a promise the app cannot keep.
+    const bound = new Set(
+      [
+        press({ key: "k", ctrlKey: true }),
+        press({ key: "n", ctrlKey: true }),
+        press({ key: ",", ctrlKey: true }),
+        press({ key: "/", ctrlKey: true }),
+        press({ key: "Escape" }),
+        press({ key: "ArrowDown", altKey: true }),
+        press({ key: "ArrowUp", altKey: true }),
+        press({ key: "D", ctrlKey: true, shiftKey: true }),
+      ].map(match)
+    );
+    for (const shortcut of SHORTCUTS) {
+      expect(bound.has(shortcut.id)).toBe(true);
+    }
+  });
+
   it("documents every shortcut match() can return", () => {
     const documented = new Set(SHORTCUTS.map((s) => s.id));
     const returned = [
@@ -100,6 +132,7 @@ describe("the sheet and the handler cannot drift", () => {
       match(press({ key: "n", ctrlKey: true })),
       match(press({ key: ",", ctrlKey: true })),
       match(press({ key: "/", ctrlKey: true })),
+      match(press({ key: "D", ctrlKey: true, shiftKey: true })),
       match(press({ key: "Escape" })),
       match(press({ key: "ArrowDown", altKey: true })),
       match(press({ key: "ArrowUp", altKey: true })),

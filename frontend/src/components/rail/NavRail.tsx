@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { Avatar } from "@/components/ui/Avatar";
 import { CallIcon, ChatIcon, StoryIcon } from "@/components/ui/icons";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import type { User } from "@/lib/types";
 import { usePreferences } from "@/store/preferences";
 
@@ -76,28 +77,32 @@ export function NavRail({ user }: { user: User }) {
         </ul>
       </div>
 
-      <Link
-        href="/settings"
-        title="Settings"
-        aria-label="Settings"
-        aria-current={onSettings ? "page" : undefined}
-        className={`flex h-12 items-center rounded-lg transition-colors ${
-          onSettings ? "bg-surface" : "hover:bg-surface"
-        } ${expanded ? "w-full gap-3 px-3" : "w-12 justify-center"}`}
-      >
-        <span className="shrink-0">
-          <Avatar
-            name={user.display_name}
-            color={user.avatar_color}
-            fg={user.avatar_fg}
-            url={user.avatar_url}
-            size={28}
-          />
-        </span>
-        {expanded && (
-          <span className="min-w-0 truncate text-body2 text-label">{user.display_name}</span>
-        )}
-      </Link>
+      <div className={`flex flex-col gap-2 ${expanded ? "" : "items-center"}`}>
+        <ThemeToggle expanded={expanded} />
+
+        <Link
+          href="/settings"
+          title="Settings"
+          aria-label="Settings"
+          aria-current={onSettings ? "page" : undefined}
+          className={`flex h-12 items-center rounded-lg transition-colors ${
+            onSettings ? "bg-surface" : "hover:bg-surface"
+          } ${expanded ? "w-full gap-3 px-3" : "w-12 justify-center"}`}
+        >
+          <span className="shrink-0">
+            <Avatar
+              name={user.display_name}
+              color={user.avatar_color}
+              fg={user.avatar_fg}
+              url={user.avatar_url}
+              size={28}
+            />
+          </span>
+          {expanded && (
+            <span className="min-w-0 truncate text-body2 text-label">{user.display_name}</span>
+          )}
+        </Link>
+      </div>
     </nav>
   );
 }

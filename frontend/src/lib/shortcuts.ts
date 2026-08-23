@@ -20,6 +20,7 @@ export const SHORTCUTS: Shortcut[] = [
   { id: "next-chat", keys: "Alt+↓", description: "Next conversation", whileTyping: true },
   { id: "previous-chat", keys: "Alt+↑", description: "Previous conversation", whileTyping: true },
   { id: "settings", keys: "Ctrl+,", description: "Open settings" },
+  { id: "theme", keys: "Ctrl+Shift+D", description: "Switch light / dark mode" },
   { id: "close", keys: "Escape", description: "Close panel or clear search", whileTyping: true },
   { id: "help", keys: "Ctrl+/", description: "Show this list", whileTyping: true },
 ];
@@ -50,9 +51,13 @@ export function match(event: KeyboardEvent): string | null {
 
   if (key === "Escape") return "close";
   if (mod && (key === "/" || key === "?")) return "help";
+  // Shift-qualified so it cannot be confused with anything else on Ctrl+D.
+  if (mod && event.shiftKey && key.toLowerCase() === "d") return "theme";
   if (mod && key.toLowerCase() === "k") return "search";
   if (mod && key.toLowerCase() === "n") return "new-chat";
   if (mod && key === ",") return "settings";
+  // Shift-qualified: plain Ctrl+L is the browser's address bar.
+  if (mod && event.shiftKey && key.toLowerCase() === "l") return "theme";
   // Alt rather than plain arrows: the arrows belong to the message box and to
   // scrolling the thread.
   if (event.altKey && key === "ArrowDown") return "next-chat";

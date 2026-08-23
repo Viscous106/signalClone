@@ -181,3 +181,29 @@ export function PaletteIcon({ className = "h-5 w-5" }: IconProps) {
     </svg>
   );
 }
+
+/** Sun, shown when the app is dark and clicking would lighten it. */
+export function SunIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <circle cx="12" cy="12" r="4" />
+      <path
+        d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/** Moon, shown when the app is light and clicking would darken it. */
+export function MoonIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path
+        d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

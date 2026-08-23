@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { MobileTabs } from "@/components/rail/MobileTabs";
 import { NavRail } from "@/components/rail/NavRail";
 import { ShortcutsModal } from "@/components/ui/ShortcutsModal";
+import { useThemeSwitch } from "@/components/ui/ThemeToggle";
 import { Toaster } from "@/components/ui/Toaster";
 import { useRealtime } from "@/hooks/useRealtime";
 import { useShortcuts } from "@/hooks/useShortcuts";
@@ -25,6 +26,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, setUser } = useSession();
   const [showShortcuts, setShowShortcuts] = useState(false);
   const conversations = useConversations((s) => s.items);
+  const { toggle: toggleTheme } = useThemeSwitch();
 
   /** Alt+↑/↓ walks the sidebar in the order it is displayed. */
   const step = useCallback(
@@ -60,6 +62,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         document.querySelector<HTMLButtonElement>('button[aria-label="New chat"]')?.click();
       },
       settings: () => router.push("/settings"),
+      theme: toggleTheme,
       "next-chat": () => step(1),
       "previous-chat": () => step(-1),
       close: () => {
@@ -79,7 +82,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         if (pathname.startsWith("/chat")) router.push("/");
       },
     }),
-    [router, step, showShortcuts, pathname]
+    [router, step, showShortcuts, pathname, toggleTheme]
   );
 
   useShortcuts(handlers);
