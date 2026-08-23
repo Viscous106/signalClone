@@ -80,8 +80,10 @@ it does mean any future caller of a service gets no protection for free.
 
 Single socket per browser tab, authenticated by the **session cookie** — not a
 token in the query string, which would leak the JWT into logs and history.
-Cookies ignore port, so `:3000 → :8000` works in development; a cross-domain
-deployment needs the API on a sibling subdomain.
+Cookies ignore port, so `:3000 → :8000` works in development. In production
+there is only one origin (https://signal-clone-13uy.onrender.com), so the socket is same-origin and the session
+cookie rides along without further thought. A genuinely cross-domain deployment
+would need the API on a sibling subdomain.
 
 `ConnectionManager` lives on `app.state` (not a module global, so tests get a
 fresh registry) and holds `dict[user_id, set[WebSocket]]` — one user can have

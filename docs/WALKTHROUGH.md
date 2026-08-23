@@ -3,6 +3,8 @@
 Everything in this project: what it is, how it fits together, and what is
 genuinely finished. Written to be read top to bottom.
 
+**Live: [https://signal-clone-13uy.onrender.com](https://signal-clone-13uy.onrender.com)** — any phone number, code `123456`.
+
 For the reference documents behind it: [ARCHITECTURE.md](./ARCHITECTURE.md) ·
 [SCHEMA.md](./SCHEMA.md) · [API.md](./API.md) · [UI-SPEC.md](./UI-SPEC.md)
 
@@ -388,15 +390,30 @@ nothing at all.
 
 ## 9. Running it
 
+The quickest way in is the deployed build — nothing to install:
+
+| | |
+|---|---|
+| App | <https://signal-clone-13uy.onrender.com> |
+| API docs | <https://signal-clone-13uy.onrender.com/docs> |
+| Health | <https://signal-clone-13uy.onrender.com/api/health> |
+
+Any phone number works; the code is `123456`.
+
+To run it yourself instead:
+
 ```bash
 make setup    # backend venv + frontend deps
 make db       # create and seed
 make run      # api on :8000, web on :3000
 ```
 
-Any phone number works; the code is `123456`. To watch ticks, typing and
-presence move live, sign in as two of the seeded accounts in separate browser
-profiles:
+Locally that is <http://localhost:3000> for the app and
+<http://localhost:8000/docs> for the API.
+
+To watch ticks, typing and presence move live, sign in as two of the seeded
+accounts in separate browser profiles — or one normal window and one
+incognito:
 
 | Name | Number |
 |---|---|
@@ -412,5 +429,11 @@ someone else reading.
 Deployment is one Docker image on Render. The free plan allows no persistent
 disk, so the database lives in the container and is rebuilt from the seed on
 every boot: demo data is always present, and anything a visitor creates is lost
-when the instance restarts. Moving to a paid plan with a disk needs only a
-`plan` and `disk` block — the image already points the database at `/data`.
+when the instance restarts. A cold instance takes a few seconds to wake. Moving
+to a paid plan with a disk needs only a `plan` and `disk` block — the image
+already points the database at `/data`.
+
+Because the API serves the frontend, the deployed app has **one origin**. The
+client calls `/api/*` and `/ws` as same-origin relative paths, so there is no
+base URL to configure and no CORS to negotiate — the same code runs against the
+live host and a local build without a rebuild.

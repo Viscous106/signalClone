@@ -9,16 +9,25 @@ protocol.
 
 ## Try it
 
+**[https://signal-clone-13uy.onrender.com](https://signal-clone-13uy.onrender.com)**
+
+Nothing to install. Verification is mocked: **any phone number works and the
+code is always `123456`.**
+
+The free plan allows no persistent disk, so the database is rebuilt from the
+seed whenever the instance restarts — the demo cast is always there, and
+anything you create is not permanent. A cold instance takes a few seconds to
+wake.
+
+### Or run it locally
+
 ```bash
 make setup     # backend venv + frontend deps
 make db        # create and seed the database
 make run       # api on :8000, web on :3000
 ```
 
-Then open **http://localhost:3000**.
-
-**Signing in.** Verification is mocked: any phone number works and the code is
-always **`123456`**.
+Then open <http://localhost:3000>.
 
 **Register with your own number and the app is already populated** — you get
 the demo cast as contacts, two direct threads with history (one unread), and a
@@ -26,7 +35,8 @@ place in the group. Seeding only one hardcoded account would leave anyone who
 signs up staring at an empty app. Switch it off with `STARTER_CHATS=false`.
 
 To watch messages, ticks and typing indicators move live, sign in as two of the
-seeded accounts in separate browser profiles:
+seeded accounts in separate browser profiles — or one normal window and one
+incognito, whether you are on the live site or a local build:
 
 | Name | Number |
 |---|---|
@@ -153,9 +163,14 @@ WebSocket connections.
 
 ## Deployment
 
+Live at **[https://signal-clone-13uy.onrender.com](https://signal-clone-13uy.onrender.com)** — Render, free plan, from `render.yaml`.
+
 **One service.** The Dockerfile builds the frontend and hands the bundle to the
 API, so there is a single image, a single URL, and nothing to keep in sync
-between two hosts.
+between two hosts. Because the API serves the frontend, the deployed app has
+**one origin**: the client calls `/api/*` and `/ws` as same-origin relative
+paths, with no base URL to configure. `NEXT_PUBLIC_WS_URL` exists only for the
+case where the API lives on another host.
 
 ```bash
 docker build -t signal-clone .
