@@ -65,3 +65,43 @@ export function matchesSearch(conversation: Conversation, meId: number, query: s
       (m.display_name.toLowerCase().includes(term) || m.phone.includes(term))
   );
 }
+
+/** The chat-list filter chips. "all" is the resting state. */
+export type ChatFilter = "all" | "unread" | "favorites" | "groups";
+
+/**
+ * Does this row belong under the given chip? Favourites are passed in rather
+ * than read from the store, so this stays a pure function.
+ */
+export function matchesFilter(
+  conversation: Conversation,
+  filter: ChatFilter,
+  favoriteIds: readonly number[]
+): boolean {
+  switch (filter) {
+    case "unread":
+      return conversation.unread_count > 0;
+    case "favorites":
+      return favoriteIds.includes(conversation.id);
+    case "groups":
+      return conversation.type === "group";
+    default:
+      return true;
+  }
+}
+
+/**
+ * How many rows each chip would show. Counted before the search term is
+ * applied: the chips describe the whole list, not the current search.
+ */
+export function filterCounts(
+  conversations: readonly Conversation[],
+  favoriteIds: readonly number[]
+): Record<ChatFilter, number> {
+  return {
+    all: conversations.length,
+    unread: conversations.filter((c) => c.unread_count > 0).length,
+    favorites: conversations.filter((c) => favoriteIds.includes(c.id)).length,
+    groups: conversations.filter((c) => c.type === "group").length,
+  };
+}

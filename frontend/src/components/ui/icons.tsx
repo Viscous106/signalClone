@@ -89,3 +89,22 @@ export function CloseIcon({ className = "h-5 w-5" }: IconProps) {
     </svg>
   );
 }
+
+/** Outlined when not a favourite, filled when it is. */
+export function StarIcon({ className = "h-5 w-5", filled = false }: IconProps & { filled?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.8"
+      className={className}
+    >
+      <path
+        d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.6 9.7l5.8-.8Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

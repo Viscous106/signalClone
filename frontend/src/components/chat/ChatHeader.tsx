@@ -3,10 +3,11 @@
 import Link from "next/link";
 
 import { Avatar } from "@/components/ui/Avatar";
-import { BackIcon, CallIcon, SearchIcon } from "@/components/ui/icons";
+import { BackIcon, CallIcon, SearchIcon, StarIcon } from "@/components/ui/icons";
 import { listTimestamp } from "@/lib/format";
 import { conversationTitle, otherMember } from "@/lib/conversation";
 import type { Conversation } from "@/lib/types";
+import { useFavorites } from "@/store/favorites";
 
 export function ChatHeader({
   conversation,
@@ -21,6 +22,10 @@ export function ChatHeader({
 }) {
   const title = conversationTitle(conversation, meId);
   const counterpart = otherMember(conversation, meId);
+
+  const favoriteIds = useFavorites((s) => s.ids);
+  const toggleFavorite = useFavorites((s) => s.toggle);
+  const isFavorite = favoriteIds.includes(conversation.id);
 
   const subtitle = typingLabel
     ? `${typingLabel} is typing…`
@@ -69,8 +74,21 @@ export function ChatHeader({
         </div>
       )}
 
-      {/* Calling and in-chat search are out of scope; kept visible for fidelity. */}
       <div className="flex items-center gap-1 text-label-2">
+        {/* The only way in or out of the Favorites filter. */}
+        <button
+          onClick={() => toggleFavorite(conversation.id)}
+          aria-pressed={isFavorite}
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          className={`rounded-md p-2 hover:bg-surface-2 ${
+            isFavorite ? "text-accent" : "hover:text-label"
+          }`}
+        >
+          <StarIcon filled={isFavorite} />
+        </button>
+
+        {/* Calling and in-chat search are out of scope; kept visible for fidelity. */}
         {[
           { key: "video", label: "Video call", node: <CallIcon className="h-5 w-5" /> },
           { key: "search", label: "Search in chat", node: <SearchIcon className="h-5 w-5" /> },

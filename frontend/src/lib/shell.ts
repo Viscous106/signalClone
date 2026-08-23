@@ -20,6 +20,17 @@ export function mobilePane(pathname: string): "list" | "main" {
   return sectionFor(pathname) === "chats" ? "list" : "main";
 }
 
+/**
+ * The chat list belongs to the chats section alone.
+ *
+ * Calls, Stories and Settings each own the whole content area — carrying the
+ * list into them would leave a pane that has nothing to do with the page.
+ */
+export function showsChatList(pathname: string): boolean {
+  const section = sectionFor(pathname);
+  return section === "chats" || section === "chat";
+}
+
 /** Signal hides the bottom tabs inside a conversation and in settings. */
 export function showsTabBar(pathname: string): boolean {
   const section = sectionFor(pathname);

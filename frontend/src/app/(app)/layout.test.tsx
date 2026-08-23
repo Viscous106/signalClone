@@ -113,6 +113,21 @@ describe("AppLayout", () => {
       expect(screen.queryByLabelText("Search conversations")).not.toBeInTheDocument();
     });
 
+    it("drops the chat list in calls and stories, which own the whole area", () => {
+      for (const route of ["/calls", "/stories"]) {
+        path.mockReturnValue(route);
+        const { unmount } = shell();
+        expect(screen.queryByLabelText("Search conversations")).not.toBeInTheDocument();
+        unmount();
+      }
+    });
+
+    it("keeps the chat list beside an open thread", () => {
+      path.mockReturnValue("/chat");
+      shell();
+      expect(screen.getByLabelText("Search conversations")).toBeInTheDocument();
+    });
+
     it("sizes the sidebar 320px from md up", () => {
       const { container } = shell();
       expect(container.querySelector(".md\\:w-\\[320px\\]")).not.toBeNull();

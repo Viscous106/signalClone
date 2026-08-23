@@ -5,7 +5,14 @@ import Link from "next/link";
 import { chatHref } from "@/hooks/useActiveConversation";
 
 import { listTimestamp } from "@/lib/format";
-import { conversationTitle, matchesSearch, otherMember, previewText } from "@/lib/conversation";
+import {
+  type ChatFilter,
+  conversationTitle,
+  matchesFilter,
+  matchesSearch,
+  otherMember,
+  previewText,
+} from "@/lib/conversation";
 import type { Conversation } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
 
@@ -14,8 +21,21 @@ type Props = {
   meId: number;
   activeId: number | null;
   query: string;
-  /** Show only conversations with something unread. */
-  unreadOnly?: boolean;
+  /** Which chip is active. Defaults to the unfiltered list. */
+  filter?: ChatFilter;
+  /** Favourited conversation ids, for the "favorites" chip. */
+  favoriteIds?: readonly number[];
+};
+
+/** Shown when a chip and a search term between them leave nothing. */
+const EMPTY: Record<ChatFilter, { title: string; body: string }> = {
+  all: { title: "No chats", body: "Recent chats will appear here." },
+  unread: { title: "No unread chats", body: "You are all caught up." },
+  favorites: {
+    title: "No favorites",
+    body: "Star a chat from its header to keep it here.",
+  },
+  groups: { title: "No groups", body: "Groups you join will appear here." },
 };
 
 export function ConversationList({
@@ -23,18 +43,18 @@ export function ConversationList({
   meId,
   activeId,
   query,
-  unreadOnly = false,
+  filter = "all",
+  favoriteIds = [],
 }: Props) {
   const visible = conversations
     .filter((c) => matchesSearch(c, meId, query))
-    .filter((c) => !unreadOnly || c.unread_count > 0);
+    .filter((c) => matchesFilter(c, filter, favoriteIds));
 
   if (visible.length === 0) {
-    const empty = unreadOnly
-      ? { title: "No unread chats", body: "You are all caught up." }
-      : query.trim()
-        ? { title: "No results", body: `Nothing matched "${query.trim()}"` }
-        : { title: "No chats", body: "Recent chats will appear here." };
+    // A search term explains the emptiness better than the chip does.
+    const empty = query.trim()
+      ? { title: "No results", body: `Nothing matched "${query.trim()}"` }
+      : EMPTY[filter];
 
     return (
       <div className="px-6 py-16 text-center">

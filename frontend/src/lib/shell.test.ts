@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { mobilePane, sectionFor, showsTabBar } from "./shell";
+import { mobilePane, sectionFor, showsChatList, showsTabBar } from "./shell";
 
 describe("sectionFor", () => {
   it("maps each route to a section", () => {
@@ -33,6 +33,19 @@ describe("mobilePane — only one pane fits on a phone", () => {
 
   it("gives settings the whole screen", () => {
     expect(mobilePane("/settings")).toBe("main");
+  });
+});
+
+describe("showsChatList", () => {
+  it("shows beside the chats tab and an open thread", () => {
+    expect(showsChatList("/")).toBe(true);
+    expect(showsChatList("/chat?c=3")).toBe(true);
+  });
+
+  it("stays out of the sections that own the whole screen", () => {
+    expect(showsChatList("/calls")).toBe(false);
+    expect(showsChatList("/stories")).toBe(false);
+    expect(showsChatList("/settings")).toBe(false);
   });
 });
 

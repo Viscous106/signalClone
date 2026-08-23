@@ -106,7 +106,7 @@ describe("ConversationList", () => {
   });
 
   it("can show only what is unread", () => {
-    render(<ConversationList conversations={list} meId={ME} activeId={null} query="" unreadOnly />);
+    render(<ConversationList conversations={list} meId={ME} activeId={null} query="" filter="unread" />);
     const titles = screen.getAllByTestId("conversation-title").map((n) => n.textContent);
     // Only the group carries a badge in this fixture.
     expect(titles).toEqual(["Weekend Trip"]);
@@ -114,14 +114,56 @@ describe("ConversationList", () => {
 
   it("says you are caught up when nothing is unread", () => {
     render(
-      <ConversationList conversations={[withBob]} meId={ME} activeId={null} query="" unreadOnly />
+      <ConversationList conversations={[withBob]} meId={ME} activeId={null} query="" filter="unread" />
     );
     expect(screen.getByText(/no unread chats/i)).toBeInTheDocument();
   });
 
+  it("shows only groups under the Groups chip", () => {
+    render(<ConversationList conversations={list} meId={ME} activeId={null} query="" filter="groups" />);
+    const titles = screen.getAllByTestId("conversation-title").map((n) => n.textContent);
+    expect(titles).toEqual(["Weekend Trip"]);
+  });
+
+  it("shows only starred chats under the Favorites chip", () => {
+    render(
+      <ConversationList
+        conversations={list}
+        meId={ME}
+        activeId={null}
+        query=""
+        filter="favorites"
+        favoriteIds={[2]}
+      />
+    );
+    const titles = screen.getAllByTestId("conversation-title").map((n) => n.textContent);
+    expect(titles).toEqual(["Carol Nwosu"]);
+  });
+
+  it("points at the star when nothing is favourited yet", () => {
+    render(
+      <ConversationList conversations={list} meId={ME} activeId={null} query="" filter="favorites" />
+    );
+    expect(screen.getByText(/no favorites/i)).toBeInTheDocument();
+    expect(screen.getByText(/star a chat/i)).toBeInTheDocument();
+  });
+
+  it("lets a search term explain the emptiness instead of the chip", () => {
+    render(
+      <ConversationList
+        conversations={list}
+        meId={ME}
+        activeId={null}
+        query="zebra"
+        filter="groups"
+      />
+    );
+    expect(screen.getByText(/no results/i)).toBeInTheDocument();
+  });
+
   it("combines the filter with the search term", () => {
     render(
-      <ConversationList conversations={list} meId={ME} activeId={null} query="bob" unreadOnly />
+      <ConversationList conversations={list} meId={ME} activeId={null} query="bob" filter="unread" />
     );
     // "bob" matches his direct chat *and* the group he is a member of, but his
     // direct chat has nothing unread, so only the group survives both.

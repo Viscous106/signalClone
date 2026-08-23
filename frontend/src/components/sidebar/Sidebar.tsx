@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react";
 
 import { ConversationList } from "@/components/sidebar/ConversationList";
+import { FilterChips } from "@/components/sidebar/FilterChips";
 import { ListMenu } from "@/components/sidebar/ListMenu";
 import { NewChatPanel } from "@/components/sidebar/NewChatPanel";
 import { NewGroupPanel } from "@/components/sidebar/NewGroupPanel";
 import { PencilIcon, SearchIcon } from "@/components/ui/icons";
+import { type ChatFilter, filterCounts } from "@/lib/conversation";
 import { useConversations } from "@/store/conversations";
+import { useFavorites } from "@/store/favorites";
 
 /** The composers replace the list inside this pane rather than floating over
  *  it, which is how Signal does it. */
@@ -17,11 +20,14 @@ export function Sidebar({ meId, activeId }: { meId: number; activeId: number | n
   const { items, loading, load } = useConversations();
   const [query, setQuery] = useState("");
   const [view, setView] = useState<View>("chats");
-  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [filter, setFilter] = useState<ChatFilter>("all");
+  const favoriteIds = useFavorites((s) => s.ids);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const counts = filterCounts(items, favoriteIds);
 
   return (
     <aside className="flex min-w-0 flex-1 flex-col border-r border-edge bg-surface-2 md:w-[320px] md:flex-none">
@@ -45,25 +51,13 @@ export function Sidebar({ meId, activeId }: { meId: number; activeId: number | n
                 <PencilIcon />
               </button>
               <ListMenu
-                unreadOnly={unreadOnly}
-                onToggleUnread={() => setUnreadOnly((v) => !v)}
+                unreadOnly={filter === "unread"}
+                onToggleUnread={() =>
+                  setFilter((current) => (current === "unread" ? "all" : "unread"))
+                }
               />
             </div>
           </header>
-
-          {unreadOnly && (
-            <div className="px-3 pb-2">
-              <button
-                onClick={() => setUnreadOnly(false)}
-                className="flex w-full items-center justify-between rounded-lg bg-surface px-3 py-1.5 text-body2 text-label"
-              >
-                Unread only
-                <span aria-hidden="true" className="text-label-2">
-                  ×
-                </span>
-              </button>
-            </div>
-          )}
 
           <div className="px-3 pb-2">
             <div className="flex items-center gap-2 rounded-lg bg-surface px-3 py-1.5">
@@ -78,6 +72,8 @@ export function Sidebar({ meId, activeId }: { meId: number; activeId: number | n
             </div>
           </div>
 
+          <FilterChips active={filter} counts={counts} onChange={setFilter} />
+
           <div className="min-h-0 flex-1 overflow-y-auto">
             {loading ? (
               <p className="px-6 py-10 text-center text-body2 text-label-2">Loading…</p>
@@ -87,6 +83,8 @@ export function Sidebar({ meId, activeId }: { meId: number; activeId: number | n
                 meId={meId}
                 activeId={activeId}
                 query={query}
+                filter={filter}
+                favoriteIds={favoriteIds}
               />
             )}
           </div>

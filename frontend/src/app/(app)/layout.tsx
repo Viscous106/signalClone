@@ -8,8 +8,9 @@ import { NavRail } from "@/components/rail/NavRail";
 import { Toaster } from "@/components/ui/Toaster";
 import { useRealtime } from "@/hooks/useRealtime";
 import { useUnreadTitle } from "@/hooks/useUnreadTitle";
-import { mobilePane, showsTabBar } from "@/lib/shell";
+import { mobilePane, showsChatList, showsTabBar } from "@/lib/shell";
 import { usePreferences } from "@/store/preferences";
+import { useFavorites } from "@/store/favorites";
 import { SidebarSlot } from "@/components/sidebar/SidebarSlot";
 import { loadCurrentUser } from "@/lib/session";
 import { useSession } from "@/store/session";
@@ -23,11 +24,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useRealtime(user?.id);
   useUnreadTitle();
 
-  // Theme lives in localStorage, which the server cannot read.
+  // Theme and favourites live in localStorage, which the server cannot read.
   const hydratePreferences = usePreferences((s) => s.hydrate);
+  const hydrateFavorites = useFavorites((s) => s.hydrate);
   useEffect(() => {
     hydratePreferences();
-  }, [hydratePreferences]);
+    hydrateFavorites();
+  }, [hydratePreferences, hydrateFavorites]);
 
   useEffect(() => {
     // The cookie survives reloads but the store does not, so rehydrate the
@@ -50,8 +53,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return <div className="h-screen bg-surface" aria-busy="true" />;
   }
 
-  // Settings brings its own nav pane, so the chat list steps aside.
-  const chrome = !pathname.startsWith("/settings");
+  // Calls, Stories and Settings each own the whole content area.
+  const chatList = showsChatList(pathname);
   // A phone has room for exactly one pane; the other is hidden until `md`.
   const primary = mobilePane(pathname);
   const tabBar = showsTabBar(pathname);
@@ -64,7 +67,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <NavRail user={user} />
       </div>
 
-      {chrome && (
+      {chatList && (
         <div
           className={`${primary === "list" ? "flex" : "hidden"} min-w-0 flex-1 md:flex md:flex-none ${paneRoom}`}
         >
