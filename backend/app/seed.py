@@ -20,6 +20,7 @@ from app.db.models import (
     Conversation,
     ConversationMember,
     Message,
+    MessageReceipt,
     User,
     pick_avatar_token,
 )
@@ -159,16 +160,50 @@ def _make_conversation(
 
 
 def _mark_read(db: Session, conv: Conversation) -> None:
-    newest = (
-        db.query(func.max(Message.id)).filter(Message.conversation_id == conv.id).scalar() or 0
-    )
-    for member in db.query(ConversationMember).filter_by(conversation_id=conv.id).all():
+    """Everyone has seen everything in this conversation.
+
+    Both halves matter: the read *cursor* clears the sidebar badge, and a
+    *receipt* per recipient is what the sender's tick marks are derived from.
+    Setting only the cursor leaves every message showing a single check.
+    """
+    members = db.query(ConversationMember).filter_by(conversation_id=conv.id).all()
+    messages = db.query(Message).filter_by(conversation_id=conv.id).all()
+
+    newest = max((m.id for m in messages), default=0)
+    for member in members:
         member.last_read_message_id = newest
+
+    for message in messages:
+        for member in members:
+            if member.user_id == message.sender_id:
+                continue  # you do not receipt your own message
+            existing = (
+                db.query(MessageReceipt)
+                .filter_by(message_id=message.id, user_id=member.user_id)
+                .first()
+            )
+            if existing is not None:
+                continue
+            # A beat after it arrived, so the timeline reads sensibly.
+            seen = message.created_at + timedelta(seconds=20)
+            db.add(
+                MessageReceipt(
+                    message_id=message.id,
+                    user_id=member.user_id,
+                    delivered_at=seen,
+                    read_at=seen,
+                )
+            )
     db.flush()
 
 
 def _leave_unread(db: Session, conv: Conversation, user: User, count: int) -> None:
-    """Rewind one person's read cursor so `count` messages show as unread."""
+    """Rewind one person's read cursor so `count` messages show as unread.
+
+    Their receipts lose `read_at` but keep `delivered_at`: the messages did
+    arrive, so their senders should still see two outline checks rather than
+    one.
+    """
     recent = (
         db.query(Message)
         .filter(Message.conversation_id == conv.id, Message.sender_id != user.id)
@@ -178,8 +213,18 @@ def _leave_unread(db: Session, conv: Conversation, user: User, count: int) -> No
     )
     if not recent:
         return
+
     member = db.query(ConversationMember).filter_by(conversation_id=conv.id, user_id=user.id).one()
     member.last_read_message_id = recent[-1].id - 1
+
+    for message in recent:
+        receipt = (
+            db.query(MessageReceipt)
+            .filter_by(message_id=message.id, user_id=user.id)
+            .first()
+        )
+        if receipt is not None:
+            receipt.read_at = None
     db.flush()
 
 

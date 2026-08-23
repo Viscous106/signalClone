@@ -68,3 +68,92 @@ class TestApp:
 
     def test_unknown_route_is_404(self, client):
         assert client.get("/api/nope").status_code == 404
+
+
+class TestSeededReceipts:
+    """The tick marks come from message_receipts, so the seed has to write them.
+
+    Without this every seeded message shows a single check, which reads as
+    "never delivered" and hides the feature entirely.
+    """
+
+    def test_my_seeded_messages_show_as_read(self, db):
+        from app.db.models import Conversation, ConversationMember, Message, User
+        from app.services import receipts as receipt_service
+
+        seed(db)
+        owner = db.query(User).filter_by(username="yash").one()
+        mine = (
+            db.query(Conversation)
+            .join(ConversationMember, ConversationMember.conversation_id == Conversation.id)
+            .filter(ConversationMember.user_id == owner.id, Conversation.type == "direct")
+            .all()
+        )
+        assert mine, "the owner should have direct chats"
+
+        for conversation in mine:
+            sent_by_me = (
+                db.query(Message)
+                .filter_by(conversation_id=conversation.id, sender_id=owner.id)
+                .all()
+            )
+            statuses = receipt_service.statuses_for(db, sent_by_me, owner.id)
+            assert statuses, "no status computed for my own messages"
+            assert set(statuses.values()) == {"read"}, statuses
+
+    def test_an_unread_thread_still_shows_delivered_to_its_sender(self, db):
+        """Alice's unread messages reached the owner, so Alice sees two checks."""
+        from app.db.models import Conversation, ConversationMember, Message, User
+        from app.services import receipts as receipt_service
+
+        seed(db)
+        owner = db.query(User).filter_by(username="yash").one()
+        alice = db.query(User).filter_by(username="alice").one()
+
+        with_alice = (
+            db.query(Conversation)
+            .join(ConversationMember, ConversationMember.conversation_id == Conversation.id)
+            .filter(Conversation.type == "direct", ConversationMember.user_id == owner.id)
+            .all()
+        )
+        thread = next(
+            c
+            for c in with_alice
+            if any(m.user_id == alice.id for m in c.members)
+        )
+
+        member = next(m for m in thread.members if m.user_id == owner.id)
+        unread = (
+            db.query(Message)
+            .filter(
+                Message.conversation_id == thread.id,
+                Message.id > member.last_read_message_id,
+                Message.sender_id == alice.id,
+            )
+            .all()
+        )
+        assert unread, "this thread is meant to have something unread"
+
+        statuses = receipt_service.statuses_for(db, unread, alice.id)
+        assert set(statuses.values()) == {"delivered"}, statuses
+
+    def test_receipts_exist_for_everyone_but_the_sender(self, db):
+        from app.db.models import Message, MessageReceipt
+
+        seed(db)
+        # No receipt should ever name the person who sent the message.
+        rows = (
+            db.query(MessageReceipt)
+            .join(Message, Message.id == MessageReceipt.message_id)
+            .filter(MessageReceipt.user_id == Message.sender_id)
+            .count()
+        )
+        assert rows == 0
+
+    def test_seeding_twice_does_not_duplicate_receipts(self, db):
+        from app.db.models import MessageReceipt
+
+        seed(db)
+        before = db.query(MessageReceipt).count()
+        seed(db)
+        assert db.query(MessageReceipt).count() == before
