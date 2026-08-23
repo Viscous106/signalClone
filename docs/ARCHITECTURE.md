@@ -33,22 +33,48 @@ backend/
     db/                session.py, models.py
     schemas/           Pydantic request/response models
     api/               auth.py users.py contacts.py conversations.py messages.py
+    services/          the logic behind the routes — see below
     ws/                manager.py (ConnectionManager), routes.py (/ws)
-    seed.py
-  requirements.txt
+    seed.py  cli.py  web.py
+  pyproject.toml
 
 frontend/
   src/app/
-    (auth)/login  (auth)/register
-    (app)/layout.tsx          80px nav rail + conversation list, persistent
+    (auth)/login
+    (app)/layout.tsx          nav rail + conversation list, persistent
     (app)/page.tsx            empty state ("Select a chat")
-    (app)/chat/[id]/page.tsx  message pane
-    (app)/settings/...        privacy / notifications / appearance
-    (app)/calls  stories  devices     "Coming Soon" stubs
-  src/components/  rail/ sidebar/ chat/ modals/ ui/
-  src/lib/         api.ts  ws.ts  time.ts
-  src/store/       session.ts conversations.ts messages.ts  (zustand)
+    (app)/chat/page.tsx       message pane, keyed off ?c=<id>
+    (app)/settings/page.tsx   general / appearance / chats / privacy
+    (app)/calls  stories      "Coming Soon" stubs
+  src/components/  rail/ sidebar/ chat/ settings/ auth/ ui/
+  src/hooks/       useRealtime  useShortcuts  useActiveConversation  useUnreadTitle
+  src/lib/         api.ts ws.ts types.ts conversation.ts shell.ts shortcuts.ts
+                   attachments.ts disappearing.ts messages.ts format.ts phone.ts
+  src/store/       session conversations messages preferences favorites
+                   chatColors toasts  (zustand)
 ```
+
+There are **no dynamic route segments**: the export is prerendered at build
+time, so the open conversation is `?c=<id>` rather than `/chat/<id>`.
+
+## Services
+
+The routers stay thin; the interesting logic lives in `app/services/`.
+
+| Module | Owns |
+|---|---|
+| `conversations.py` | The sidebar read. Its whole point is the query plan: a fixed statement count regardless of how many conversations you have |
+| `receipts.py` | Delivery and read receipts, and deriving the tick state from them |
+| `groups.py` | Membership, roles, and the system notices that record changes |
+| `messages.py` | Resolving `reply_to_id` into the flat snippet a reply renders |
+| `attachments.py` | Data-URI validation, the size cap, and the mime allowlist |
+| `reactions.py` | The one-per-person toggle, and grouping into pills |
+| `disappearing.py` | Timer durations, arming expiry on read, and the sweep |
+| `onboarding.py` | Seeding a new account with contacts and starter threads |
+
+Authorization lives in the **routers**, not the services: a service takes an
+actor purely to write the system notice. That keeps the rules in one place, but
+it does mean any future caller of a service gets no protection for free.
 
 ## Realtime
 
@@ -75,13 +101,17 @@ blocking SQLAlchemy calls never sit on the loop.
 | Event | Payload | Effect |
 |---|---|---|
 | `message.new` | full message | append bubble, bump conversation to top of list |
-| `message.status` | message_id, status, user_id | ✓ → ✓✓ → blue ✓✓ |
+| `message.status` | message_id, status, expires_at? | ✓ → ✓✓ → filled ✓✓. Carries `expires_at` when this read armed a disappearing timer |
+| `message.reactions` | message_id, conversation_id, reactions | Redraw the pills. Sent per-recipient, since each needs its own `mine` flag |
 | `typing` | conversation_id, user_id, is_typing | typing dots |
 | `presence` | user_id, online, last_seen | sidebar + chat header |
 | `conversation.updated` | conversation | rename, member change, added to a group |
 | `conversation.removed` | conversation_id | you were removed, or you left |
 
-**Client → server**: `typing` (start/stop), `ping` (keepalive).
+Plus `ready` on connect and `pong` in reply to a heartbeat.
+
+**Client → server**: `typing` (start/stop), `ping` (keepalive). Nothing else —
+the socket carries no writes, so a dropped connection can never lose a message.
 
 `conversation.updated` is one payload broadcast to every member, so it cannot
 carry per-person state — it always arrives with `last_message: null` and
@@ -129,7 +159,25 @@ Signal's real design tokens, defined once as CSS variables in `globals.css` and 
 | border | `#FFF` 6% | `#000` 6% |
 | accent | `#5563FF` | `#4655FF` |
 
-Font is **Inter**. Bubbles: 18px radius, max-width `min(306px, 100% - 38px)`, 8px/12px padding, 6px apart.
+Font is **Inter**. Bubbles: 18px radius, max-width `min(306px, 72%)`, 8px/12px
+padding, 6px apart. The inner corner of a run tightens to 4px.
+
+Light and dark are both defined as token sets — light on `:root`, dark under a
+`.dark` class on `<html>`. The theme is chosen in Settings (System / Light /
+Dark, with a `prefers-color-scheme` listener for System) and toggled from the
+nav rail, the chat-list menu, or `Ctrl+Shift+D`; all of them go through one
+`useThemeSwitch()` hook.
+
+Per-conversation bubble colour is a `localStorage` override applied as an inline
+style, since Tailwind cannot enumerate an arbitrary hex.
+
+## Keyboard
+
+One document-level listener (`hooks/useShortcuts.ts`) dispatches by shortcut id,
+so a route supplies only the handlers it can act on and everything else falls
+through to the browser. The bindings are data (`lib/shortcuts.ts`), and the
+`Ctrl+/` help sheet is generated from them — so the sheet and the handler cannot
+drift. Nothing unmodified fires while the caret is in a text box.
 
 ## Assumptions
 - Mocked auth: no passwords. OTP is always `123456`; possession of a phone number is proof of identity.

@@ -80,7 +80,10 @@ reload; `make serve` runs the production shape locally.
 **Writes go over HTTP; the socket only fans out.** A message is persisted by a
 `POST` and then broadcast, so a dropped connection can never lose one.
 
-Full detail: **[architecture](docs/ARCHITECTURE.md)** ·
+Start with the **[walkthrough](docs/WALKTHROUGH.md)** — every feature, how it
+works, and what is genuinely finished.
+
+Reference: **[architecture](docs/ARCHITECTURE.md)** ·
 **[schema](docs/SCHEMA.md)** · **[API](docs/API.md)** ·
 **[UI spec](docs/UI-SPEC.md)** · **[plan](docs/PLAN.md)**
 
