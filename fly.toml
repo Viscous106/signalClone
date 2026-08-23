@@ -1,0 +1,43 @@
+# One machine serving the whole app: the API and the frontend bundle it built.
+app = "signal-clone"
+primary_region = "bom"   # Mumbai — change to whatever is nearest you
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8000"
+  # The volume below is mounted here, so the database survives deploys.
+  DATABASE_URL = "sqlite:////data/signal.db"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  # Suspend rather than stop: resuming takes about a second, instead of the
+  # cold start that made the demo look broken.
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  # Set this to 1 if you would rather it never sleeps at all.
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 100
+    hard_limit = 200
+
+[checks.health]
+  type = "http"
+  port = 8000
+  path = "/api/health"
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "15s"
+
+# Persistent disk, so anything a visitor creates outlives a redeploy.
+[[mounts]]
+  source = "signal_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

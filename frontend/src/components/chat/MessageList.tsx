@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { buildRows } from "@/lib/messages";
 import type { Message } from "@/lib/types";
 
+import { EncryptionNotice } from "./EncryptionNotice";
 import { MessageBubble } from "./MessageBubble";
 
 type Props = {
@@ -24,7 +25,8 @@ export function MessageList({ messages, meId, isGroup }: Props) {
 
   if (messages.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-full flex-col items-center justify-center px-4">
+        <EncryptionNotice />
         <p className="text-body2 text-label-2">No messages yet. Say hello.</p>
       </div>
     );
@@ -34,6 +36,9 @@ export function MessageList({ messages, meId, isGroup }: Props) {
 
   return (
     <div className="flex flex-col px-4 py-3">
+      {/* Signal opens every thread with this. */}
+      <EncryptionNotice />
+
       {rows.map((row) =>
         row.kind === "divider" ? (
           <div key={row.key} className="my-3 flex justify-center">

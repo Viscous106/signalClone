@@ -108,6 +108,17 @@ describe("MessageList", () => {
     expect(screen.getByTestId("system-notice")).toHaveTextContent("Alice added Bob");
   });
 
+  it("opens the thread with the encryption notice, as Signal does", () => {
+    render(<MessageList messages={[at(10, 0, 2, "hi")]} meId={ME} isGroup={false} />);
+    expect(screen.getByText(/end-to-end encrypted/i)).toBeInTheDocument();
+    expect(screen.getByText(/simulated/i)).toBeInTheDocument();
+  });
+
+  it("shows the notice even before anything is said", () => {
+    render(<MessageList messages={[]} meId={ME} isGroup={false} />);
+    expect(screen.getByText(/end-to-end encrypted/i)).toBeInTheDocument();
+  });
+
   it("says so when there is nothing yet", () => {
     render(<MessageList messages={[]} meId={ME} isGroup={false} />);
     expect(screen.getByText(/no messages/i)).toBeInTheDocument();

@@ -154,17 +154,34 @@ docker build -t signal-clone .
 docker run -p 8000:8000 -v signal-data:/data signal-clone
 ```
 
-`render.yaml` deploys exactly that, on the free plan.
+### Fly.io (recommended)
 
-**The hosted demo's data is ephemeral.** Render's free plan does not allow a
-persistent disk, and SQLite is a file, so the database is rebuilt from the seed
-on every deploy and whenever a sleeping instance wakes. The demo accounts and
-their conversations are therefore always present; anything a visitor creates
-lasts for that instance's life. Mounting a disk at `/data` on a paid plan makes
-it persistent with no code or config change — the image already points there.
+`fly.toml` deploys it with a persistent volume, so data survives redeploys.
 
-Also worth knowing: a free instance sleeps after inactivity, so the first
-request can take 30–60 seconds and WebSockets are down while it is asleep.
+```bash
+fly launch --no-deploy          # claims the app name, keeps our fly.toml
+fly volumes create signal_data --size 1 --region bom
+fly secrets set JWT_SECRET="$(openssl rand -hex 32)"
+fly deploy
+```
+
+A suspended machine resumes in about a second, so the first visit is not the
+minute-long cold start a free Render instance gives.
+
+### Render
+
+`render.yaml` also deploys it, on the free plan.
+
+Two caveats specific to Render's **free** plan, which is why Fly is listed
+first:
+
+- **No persistent disk**, so the database is rebuilt from the seed on every
+  deploy and whenever a sleeping instance wakes. The demo accounts are always
+  there; anything a visitor creates is not.
+- **Requests are dropped while an instance wakes** — measured at roughly one in
+  five, returning `x-render-routing: no-server` without reaching the app. A
+  single-page app needs ten or so files to render, so it frequently shows a
+  blank screen. Mounting a disk and moving off the free plan fixes both.
 
 `JWT_SECRET` must be set — the default in `config.py` is a development
 placeholder. `render.yaml` generates one.
