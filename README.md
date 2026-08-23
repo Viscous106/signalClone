@@ -113,7 +113,12 @@ Two decisions worth knowing:
 - **Auth is mocked.** No passwords: possessing a phone number is proof of
   identity, and the OTP is a constant. Real verification and key exchange are
   explicitly out of scope.
-- **Encryption is simulated** — copy and iconography only.
+- **Encryption is simulated** — every thread carries Signal's notice, worded to
+  say so plainly rather than implying real cryptography.
+- **Profile photos are stored inline.** There is no object storage, so a chosen
+  image is cropped square and shrunk to 256px in the browser and saved as a data
+  URI. Uploads therefore never touch the server, and it works on a host with an
+  ephemeral disk.
 - **Presence** is real for connected sockets and falls back to `last_seen_at`
   (a 120-second window) for everyone else.
 - **Single backend process.** The WebSocket registry is in-memory; scaling

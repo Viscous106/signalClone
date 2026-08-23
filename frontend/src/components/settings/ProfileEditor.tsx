@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Avatar } from "@/components/ui/Avatar";
 import { ApiError, api } from "@/lib/api";
+import { fileToAvatar } from "@/lib/avatar";
 import type { User } from "@/lib/types";
 import { useSession } from "@/store/session";
 import { useToasts } from "@/store/toasts";
@@ -27,6 +28,20 @@ export function ProfileEditor({ user }: { user: User }) {
   const [about, setAbout] = useState(user.about ?? "");
   const [photo, setPhoto] = useState(user.avatar_url ?? "");
   const [busy, setBusy] = useState(false);
+  const picker = useRef<HTMLInputElement>(null);
+
+  async function choosePhoto(file: File | undefined) {
+    if (!file) return;
+    setBusy(true);
+    try {
+      // Cropped and shrunk here, so the server never handles an upload.
+      setPhoto(await fileToAvatar(file));
+    } catch (err) {
+      notify(err instanceof Error ? err.message : "Could not read that image", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const changed =
     name.trim() !== user.display_name ||
@@ -53,14 +68,59 @@ export function ProfileEditor({ user }: { user: User }) {
   return (
     <>
       <div className="flex flex-col items-center pb-6">
-        <Avatar
-          name={name || user.display_name}
-          color={user.avatar_color}
-          fg={user.avatar_fg}
-          url={photo.trim() || null}
-          size={80}
+        <button
+          type="button"
+          onClick={() => picker.current?.click()}
+          disabled={busy}
+          aria-label="Change profile photo"
+          className="group relative rounded-full disabled:opacity-60"
+        >
+          <Avatar
+            name={name || user.display_name}
+            color={user.avatar_color}
+            fg={user.avatar_fg}
+            url={photo.trim() || null}
+            size={88}
+          />
+          <span className="absolute inset-x-0 bottom-0 flex h-7 items-center justify-center rounded-b-full bg-black/55 text-white">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2L9 5h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5Z" strokeLinejoin="round" />
+              <circle cx="12" cy="13" r="3.2" />
+            </svg>
+          </span>
+        </button>
+
+        {/* accept=image/* opens the camera or gallery on a phone. */}
+        <input
+          ref={picker}
+          type="file"
+          accept="image/*"
+          aria-label="Profile photo"
+          className="hidden"
+          onChange={(e) => choosePhoto(e.target.files?.[0])}
         />
-        <p className="mt-2 text-body2 text-label-2">{user.phone}</p>
+
+        <div className="mt-2 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => picker.current?.click()}
+            disabled={busy}
+            className="text-body2 text-accent hover:underline disabled:opacity-50"
+          >
+            {photo ? "Change photo" : "Add photo"}
+          </button>
+          {photo && (
+            <button
+              type="button"
+              onClick={() => setPhoto("")}
+              disabled={busy}
+              className="text-body2 text-label-2 hover:text-label disabled:opacity-50"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+        <p className="mt-1 text-body2 text-label-2">{user.phone}</p>
       </div>
 
       <div className="space-y-4">
@@ -87,20 +147,6 @@ export function ProfileEditor({ user }: { user: User }) {
             placeholder="Write a few words about yourself"
             className={field}
           />
-        </div>
-
-        <div>
-          <label htmlFor="profile-photo" className="mb-1 block text-subtitle text-label-2">
-            Profile photo
-          </label>
-          <input
-            id="profile-photo"
-            value={photo}
-            onChange={(e) => setPhoto(e.target.value)}
-            placeholder="https://…"
-            className={field}
-          />
-          <Hint>Leave this empty to use your initials.</Hint>
         </div>
 
         <div className="flex justify-end">

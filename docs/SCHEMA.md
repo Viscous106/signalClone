@@ -10,7 +10,12 @@ users ──┬── contacts (owner_id, contact_user_id)
 ```
 
 **users** — one row per account
-`id · phone (unique) · username (unique, nullable) · display_name · avatar_url · avatar_color · about · last_seen_at · created_at`
+`id · phone (unique) · username (unique, nullable) · display_name · avatar_url · avatar_token · about · last_seen_at · created_at`
+
+`avatar_url` is `TEXT`, not a bounded string: with no object storage, a chosen
+profile photo is cropped and shrunk in the browser and carried inline as a data
+URI. `avatar_token` names a palette pair used to draw initials when there is no
+photo.
 
 **contacts** — a user's address book. Directional: Alice having Bob does not imply the reverse.
 `id · owner_id → users · contact_user_id → users · nickname · created_at`

@@ -21,7 +21,7 @@ export function EncryptionNotice() {
       </svg>
       <p className="text-body2 text-label">Messages and calls are end-to-end encrypted.</p>
       <p className="mt-0.5 text-caption text-label-2">
-        Simulated in this demo — no real cryptography is performed.
+        Simulated in this demo, so no real cryptography is performed.
       </p>
     </div>
   );

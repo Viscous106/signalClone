@@ -64,7 +64,9 @@ class User(Base):
     phone: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     username: Mapped[Optional[str]] = mapped_column(String(64), unique=True)
     display_name: Mapped[str] = mapped_column(String(128))
-    avatar_url: Mapped[Optional[str]] = mapped_column(String(512))
+    # Text, not a bounded String: a profile photo is carried inline as a
+    # data URI when there is no object storage to put it in.
+    avatar_url: Mapped[Optional[str]] = mapped_column(Text)
     avatar_token: Mapped[str] = mapped_column(
         String(8),
         default=lambda ctx: pick_avatar_token(
@@ -121,7 +123,9 @@ class Conversation(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     type: Mapped[str] = mapped_column(String(16))
     name: Mapped[Optional[str]] = mapped_column(String(128))
-    avatar_url: Mapped[Optional[str]] = mapped_column(String(512))
+    # Text, not a bounded String: a profile photo is carried inline as a
+    # data URI when there is no object storage to put it in.
+    avatar_url: Mapped[Optional[str]] = mapped_column(Text)
     avatar_token: Mapped[Optional[str]] = mapped_column(String(8))
     created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

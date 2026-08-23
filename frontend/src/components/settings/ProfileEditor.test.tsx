@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileEditor } from "./ProfileEditor";
 import type { User } from "@/lib/types";
 import { useSession } from "@/store/session";
+import { useToasts } from "@/store/toasts";
 
 const ME: User = {
   id: 1,
@@ -35,10 +36,28 @@ function mockPatch(response: Partial<User> = {}) {
   return calls;
 }
 
+// jsdom has no canvas or createImageBitmap, so the image pipeline is stubbed;
+// its own maths are covered in src/lib/avatar.test.ts.
+vi.mock("@/lib/avatar", () => ({
+  fileToAvatar: vi.fn(async (file: File) =>
+    // A corrupt image is the realistic failure: the file picker's own
+    // accept="image/*" already keeps non-images out.
+    file.name.startsWith("corrupt")
+      ? Promise.reject(new Error("Could not process that image"))
+      : "data:image/jpeg;base64,AAAA"
+  ),
+}));
+
+const pick = async (user: ReturnType<typeof userEvent.setup>, name: string, type: string) => {
+  const input = screen.getByLabelText("Profile photo") as HTMLInputElement;
+  await user.upload(input, new File(["x"], name, { type }));
+};
+
 describe("ProfileEditor", () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
     useSession.setState({ user: ME });
+    useToasts.setState({ items: [] });
   });
 
   it("shows the current name and phone", () => {
@@ -87,27 +106,48 @@ describe("ProfileEditor", () => {
     await waitFor(() => expect(calls[0]).toMatchObject({ about: "Building things" }));
   });
 
-  it("lets me set a photo by URL", async () => {
+  it("offers a way to add a photo", () => {
+    mockPatch();
+    render(<ProfileEditor user={ME} />);
+    expect(screen.getByRole("button", { name: /add photo/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /change profile photo/i })).toBeInTheDocument();
+  });
+
+  it("saves a chosen photo as an inline image", async () => {
     const user = userEvent.setup();
-    const calls = mockPatch({ avatar_url: "https://example.test/me.png" });
+    const calls = mockPatch({ avatar_url: "data:image/jpeg;base64,AAAA" });
     render(<ProfileEditor user={ME} />);
 
-    await user.type(screen.getByLabelText(/photo/i), "https://example.test/me.png");
+    await pick(user, "me.jpg", "image/jpeg");
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() =>
-      expect(calls[0]).toMatchObject({ avatar_url: "https://example.test/me.png" })
+      expect(calls[0]).toMatchObject({ avatar_url: "data:image/jpeg;base64,AAAA" })
+    );
+  });
+
+  it("says so when the image cannot be processed", async () => {
+    const user = userEvent.setup();
+    mockPatch();
+    render(<ProfileEditor user={ME} />);
+
+    await pick(user, "corrupt.jpg", "image/jpeg");
+
+    await waitFor(() =>
+      expect(useToasts.getState().items.map((t) => t.message)).toContain(
+        "Could not process that image"
+      )
     );
   });
 
   it("can clear a photo back to initials", async () => {
     const user = userEvent.setup();
-    const withPhoto = { ...ME, avatar_url: "https://example.test/old.png" };
+    const withPhoto = { ...ME, avatar_url: "data:image/jpeg;base64,OLD" };
     useSession.setState({ user: withPhoto });
     const calls = mockPatch({ avatar_url: null });
     render(<ProfileEditor user={withPhoto} />);
 
-    await user.clear(screen.getByLabelText(/photo/i));
+    await user.click(screen.getByRole("button", { name: /^remove$/i }));
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => expect(calls[0]).toMatchObject({ avatar_url: null }));
