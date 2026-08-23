@@ -96,6 +96,7 @@ describe("GroupInfoModal", () => {
 
     expect(await screen.findByRole("button", { name: /add members/i })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /remove/i }).length).toBe(2);
+    expect(screen.queryByTestId("admin-only-note")).not.toBeInTheDocument();
   });
 
   it("hides admin controls from a plain member", async () => {
@@ -105,6 +106,8 @@ describe("GroupInfoModal", () => {
     await screen.findByText("Carol Nwosu");
     expect(screen.queryByRole("button", { name: /add members/i })).not.toBeInTheDocument();
     expect(screen.queryAllByRole("button", { name: /remove/i })).toHaveLength(0);
+    // The absence needs a reason, or it reads as a broken screen.
+    expect(screen.getByTestId("admin-only-note")).toHaveTextContent(/only admins/i);
   });
 
   it("never offers to remove yourself — that is Leave", async () => {

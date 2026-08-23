@@ -181,17 +181,26 @@ export function GroupInfoModal({ conversation, meId, onClose }: Props) {
           ))}
         </div>
 
-        {iAmAdmin && !adding && (
-          <div className="border-t border-edge px-4 py-3">
-            <button
-              onClick={openAdd}
-              disabled={busy}
-              className="w-full rounded-full bg-surface py-2 text-body2 text-label disabled:opacity-40"
+        {!adding &&
+          (iAmAdmin ? (
+            <div className="border-t border-edge px-4 py-3">
+              <button
+                onClick={openAdd}
+                disabled={busy}
+                className="w-full rounded-full bg-surface py-2 text-body2 text-label disabled:opacity-40"
+              >
+                Add members
+              </button>
+            </div>
+          ) : (
+            /* Say why the controls are absent, rather than letting them just vanish. */
+            <p
+              data-testid="admin-only-note"
+              className="border-t border-edge px-4 py-3 text-center text-caption text-label-2"
             >
-              Add members
-            </button>
-          </div>
-        )}
+              Only admins can add or remove members, or change the group name.
+            </p>
+          ))}
 
         {adding && (
           <div className="max-h-48 overflow-y-auto border-t border-edge py-1">
