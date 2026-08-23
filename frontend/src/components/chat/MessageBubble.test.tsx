@@ -208,6 +208,24 @@ describe("reactions", () => {
 });
 
 describe("disappearing messages", () => {
+  it("shows the duration greyed out before anyone has read it", () => {
+    // The clock starts on read, so an unread message has no countdown yet.
+    render(<MessageBubble {...props} message={message({ expire_seconds: 3600 })} />);
+    const pending = screen.getByTestId("bubble-timer-pending");
+    expect(pending).toHaveTextContent("1h");
+    expect(pending).toHaveAttribute("title", "Disappears 1h after it is read");
+    expect(screen.queryByTestId("bubble-expiry")).not.toBeInTheDocument();
+  });
+
+  it("switches to a countdown once the clock is armed", () => {
+    const expires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    render(
+      <MessageBubble {...props} message={message({ expire_seconds: 3600, expires_at: expires })} />
+    );
+    expect(screen.getByTestId("bubble-expiry")).toHaveTextContent("5m");
+    expect(screen.queryByTestId("bubble-timer-pending")).not.toBeInTheDocument();
+  });
+
   it("shows how long is left", () => {
     const expires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
     render(<MessageBubble {...props} message={message({ expires_at: expires })} />);
@@ -223,11 +241,31 @@ describe("disappearing messages", () => {
   it("shows nothing on a message that stays", () => {
     render(<MessageBubble {...props} message={message()} />);
     expect(screen.queryByTestId("bubble-expiry")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("bubble-timer-pending")).not.toBeInTheDocument();
   });
 
   it("never counts below zero", () => {
     const expires = new Date(Date.now() - 60 * 1000).toISOString();
     render(<MessageBubble {...props} message={message({ expires_at: expires })} />);
     expect(screen.getByTestId("bubble-expiry")).toHaveTextContent("0s");
+  });
+});
+
+describe("chat color", () => {
+  it("paints an outgoing bubble with the conversation's colour", () => {
+    const { container } = render(
+      <MessageBubble {...props} outgoing message={message()} chatColor="#cf163e" />
+    );
+    expect(container.querySelector('[style*="background-color"]')).not.toBeNull();
+  });
+
+  it("leaves incoming bubbles alone — the colour is the sender's, not the thread's", () => {
+    const { container } = render(<MessageBubble {...props} message={message()} chatColor="#cf163e" />);
+    expect(container.querySelector('[style*="background-color"]')).toBeNull();
+  });
+
+  it("falls back to the token class when no colour is set", () => {
+    const { container } = render(<MessageBubble {...props} outgoing message={message()} />);
+    expect(container.querySelector(".bg-outgoing")).not.toBeNull();
   });
 });

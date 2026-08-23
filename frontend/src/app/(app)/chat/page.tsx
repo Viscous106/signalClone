@@ -3,15 +3,15 @@
 import { Suspense, useEffect, useState } from "react";
 
 import { ChatHeader } from "@/components/chat/ChatHeader";
-import { DisappearingModal } from "@/components/chat/DisappearingModal";
-import { GroupInfoModal } from "@/components/chat/GroupInfoModal";
+import { ConversationInfo } from "@/components/chat/ConversationInfo";
 import { Composer } from "@/components/chat/Composer";
 import { MessageList } from "@/components/chat/MessageList";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { useActiveConversationId } from "@/hooks/useActiveConversation";
 import { sendTyping } from "@/hooks/useRealtime";
 import { api } from "@/lib/api";
-import type { Conversation, Member, Quote } from "@/lib/types";
+import type { Conversation, Quote } from "@/lib/types";
+import { selectChatColor, useChatColors } from "@/store/chatColors";
 import { useConversations } from "@/store/conversations";
 import { selectTyping, useMessages } from "@/store/messages";
 import { useSession } from "@/store/session";
@@ -25,8 +25,7 @@ function ChatPane() {
   const clearUnread = useConversations((s) => s.clearUnread);
 
   const [showInfo, setShowInfo] = useState(false);
-  const [showTimer, setShowTimer] = useState(false);
-  const [members, setMembers] = useState<Member[] | null>(null);
+  const chatColor = useChatColors(selectChatColor(conversationId));
   // Tagged with the thread it belongs to, so switching chats drops it by
   // derivation rather than by resetting state from an effect.
   const [reply, setReply] = useState<{ conversationId: number; quote: Quote } | null>(null);
@@ -66,14 +65,6 @@ function ChatPane() {
     return () => clearInterval(tick);
   }, [dropExpired]);
 
-  // Only groups gate the timer on a role, so only groups need the roster.
-  useEffect(() => {
-    if (!showTimer || conversation?.type !== "group" || members) return;
-    api
-      .get<Member[]>(`/api/conversations/${conversationId}/members`)
-      .then(setMembers)
-      .catch(() => setMembers([]));
-  }, [showTimer, conversation?.type, conversationId, members]);
 
   if (!me || !conversation) {
     return <div className="h-full" aria-busy="true" />;
@@ -82,7 +73,17 @@ function ChatPane() {
   const typist = conversation.members.find(
     (m) => m.id !== me.id && typingIds.includes(m.id)
   );
-  const iAmAdmin = (members ?? []).some((m) => m.user.id === me.id && m.role === "admin");
+
+  // The info pane replaces the thread, the way Signal Desktop does it.
+  if (showInfo) {
+    return (
+      <ConversationInfo
+        conversation={conversation}
+        meId={me.id}
+        onBack={() => setShowInfo(false)}
+      />
+    );
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -91,7 +92,6 @@ function ChatPane() {
         meId={me.id}
         typingLabel={typist ? typist.display_name.split(/\s+/)[0] : null}
         onOpenInfo={() => setShowInfo(true)}
-        onOpenTimer={() => setShowTimer(true)}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -99,6 +99,7 @@ function ChatPane() {
           messages={messages ?? []}
           meId={me.id}
           isGroup={conversation.type === "group"}
+          chatColor={chatColor}
           onReply={(quote) => setReply({ conversationId, quote })}
           onReact={(messageId, emoji) => react(conversationId, messageId, emoji)}
         />
@@ -117,22 +118,6 @@ function ChatPane() {
         meId={me.id}
       />
 
-      {showTimer && (
-        <DisappearingModal
-          conversation={conversation}
-          // Groups follow the same rule as renaming: admins only.
-          canChange={conversation.type !== "group" || iAmAdmin}
-          onClose={() => setShowTimer(false)}
-        />
-      )}
-
-      {showInfo && conversation.type === "group" && (
-        <GroupInfoModal
-          conversation={conversation}
-          meId={me.id}
-          onClose={() => setShowInfo(false)}
-        />
-      )}
     </div>
   );
 }

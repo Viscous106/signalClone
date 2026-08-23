@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { GroupInfoModal } from "./GroupInfoModal";
+import { ConversationInfo } from "./ConversationInfo";
 import { useToasts } from "@/store/toasts";
 import type { Conversation, UserBrief } from "@/lib/types";
 
@@ -70,7 +70,7 @@ function mockApi(routes: Record<string, unknown>) {
 const AS_ADMIN = { "GET /members": [member(alice, "admin"), member(bob, "member"), member(carol, "member")] };
 const AS_MEMBER = { "GET /members": [member(alice, "admin"), member(bob, "member"), member(carol, "member")] };
 
-describe("GroupInfoModal", () => {
+describe("ConversationInfo — a group", () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
     replace.mockClear();
@@ -79,7 +79,7 @@ describe("GroupInfoModal", () => {
 
   it("lists the members and marks the admin", async () => {
     mockApi(AS_ADMIN);
-    render(<GroupInfoModal conversation={group} meId={1} onClose={vi.fn()} />);
+    render(<ConversationInfo conversation={group} meId={1} onBack={vi.fn()} />);
 
     expect(await screen.findByText("Bob Martinez")).toBeInTheDocument();
     expect(screen.getAllByText(/admin/i).length).toBeGreaterThan(0);
@@ -87,13 +87,13 @@ describe("GroupInfoModal", () => {
 
   it("shows the member count", async () => {
     mockApi(AS_ADMIN);
-    render(<GroupInfoModal conversation={group} meId={1} onClose={vi.fn()} />);
+    render(<ConversationInfo conversation={group} meId={1} onBack={vi.fn()} />);
     expect(await screen.findByText(/3 members/i)).toBeInTheDocument();
   });
 
   it("offers admin controls to an admin", async () => {
     mockApi(AS_ADMIN);
-    render(<GroupInfoModal conversation={group} meId={1} onClose={vi.fn()} />);
+    render(<ConversationInfo conversation={group} meId={1} onBack={vi.fn()} />);
 
     expect(await screen.findByRole("button", { name: /add members/i })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /remove/i }).length).toBe(2);
@@ -102,7 +102,7 @@ describe("GroupInfoModal", () => {
 
   it("hides admin controls from a plain member", async () => {
     mockApi(AS_MEMBER);
-    render(<GroupInfoModal conversation={group} meId={2} onClose={vi.fn()} />);
+    render(<ConversationInfo conversation={group} meId={2} onBack={vi.fn()} />);
 
     await screen.findByText("Carol Nwosu");
     expect(screen.queryByRole("button", { name: /add members/i })).not.toBeInTheDocument();
@@ -113,7 +113,7 @@ describe("GroupInfoModal", () => {
 
   it("never offers to remove yourself — that is Leave", async () => {
     mockApi(AS_ADMIN);
-    render(<GroupInfoModal conversation={group} meId={1} onClose={vi.fn()} />);
+    render(<ConversationInfo conversation={group} meId={1} onBack={vi.fn()} />);
 
     await screen.findByText("Bob Martinez");
     const rows = screen.getAllByTestId("member-row");
@@ -125,7 +125,7 @@ describe("GroupInfoModal", () => {
   it("removes a member", async () => {
     const user = userEvent.setup();
     const calls = mockApi({ ...AS_ADMIN, "DELETE /members/2": [] });
-    render(<GroupInfoModal conversation={group} meId={1} onClose={vi.fn()} />);
+    render(<ConversationInfo conversation={group} meId={1} onBack={vi.fn()} />);
 
     await screen.findByText("Bob Martinez");
     const rows = screen.getAllByTestId("member-row");
@@ -142,7 +142,7 @@ describe("GroupInfoModal", () => {
   it("leaves the group and goes home", async () => {
     const user = userEvent.setup();
     const calls = mockApi({ ...AS_ADMIN, "DELETE /members/1": [] });
-    render(<GroupInfoModal conversation={group} meId={1} onClose={vi.fn()} />);
+    render(<ConversationInfo conversation={group} meId={1} onBack={vi.fn()} />);
 
     await screen.findByText("Bob Martinez");
     await user.click(screen.getByRole("button", { name: /leave group/i }));
@@ -154,7 +154,7 @@ describe("GroupInfoModal", () => {
   it("lets an admin rename the group", async () => {
     const user = userEvent.setup();
     const calls = mockApi({ ...AS_ADMIN, "PATCH /api/conversations/7": { ...group, name: "Coast" } });
-    render(<GroupInfoModal conversation={group} meId={1} onClose={vi.fn()} />);
+    render(<ConversationInfo conversation={group} meId={1} onBack={vi.fn()} />);
 
     await user.clear(await screen.findByLabelText(/group name/i));
     await user.type(screen.getByLabelText(/group name/i), "Coast");
@@ -168,7 +168,7 @@ describe("GroupInfoModal", () => {
   it("confirms a rename with a toast", async () => {
     const user = userEvent.setup();
     mockApi({ ...AS_ADMIN, "PATCH /api/conversations/7": { ...group, name: "Coast" } });
-    render(<GroupInfoModal conversation={group} meId={1} onClose={vi.fn()} />);
+    render(<ConversationInfo conversation={group} meId={1} onBack={vi.fn()} />);
 
     await user.clear(await screen.findByLabelText(/group name/i));
     await user.type(screen.getByLabelText(/group name/i), "Coast");
@@ -182,7 +182,7 @@ describe("GroupInfoModal", () => {
   it("says who was removed", async () => {
     const user = userEvent.setup();
     mockApi({ ...AS_ADMIN, "DELETE /members/2": [] });
-    render(<GroupInfoModal conversation={group} meId={1} onClose={vi.fn()} />);
+    render(<ConversationInfo conversation={group} meId={1} onBack={vi.fn()} />);
 
     await screen.findByText("Bob Martinez");
     const bobRow = screen
@@ -197,8 +197,142 @@ describe("GroupInfoModal", () => {
 
   it("does not let a plain member rename it", async () => {
     mockApi(AS_MEMBER);
-    render(<GroupInfoModal conversation={group} meId={2} onClose={vi.fn()} />);
+    render(<ConversationInfo conversation={group} meId={2} onBack={vi.fn()} />);
     await screen.findByText("Carol Nwosu");
     expect(screen.queryByLabelText(/group name/i)).not.toBeInTheDocument();
+  });
+});
+
+const direct: Conversation = {
+  ...group,
+  id: 9,
+  type: "direct",
+  name: null,
+  members: [alice, bob],
+};
+
+describe("ConversationInfo — the settings rows", () => {
+  beforeEach(() => {
+    useToasts.setState({ items: [] });
+    localStorage.clear();
+  });
+
+  it("names a direct chat after the other person", () => {
+    mockApi({});
+    render(<ConversationInfo conversation={direct} meId={1} onBack={vi.fn()} />);
+    expect(screen.getByText("Bob Martinez")).toBeInTheDocument();
+  });
+
+  it("shows the timer dropdown set to the conversation's value", () => {
+    mockApi({});
+    render(
+      <ConversationInfo
+        conversation={{ ...direct, disappear_seconds: 3600 }}
+        meId={1}
+        onBack={vi.fn()}
+      />
+    );
+    expect(screen.getByLabelText("Disappearing messages timer")).toHaveValue("3600");
+  });
+
+  it("says the clock starts when a message has been seen", () => {
+    mockApi({});
+    render(<ConversationInfo conversation={direct} meId={1} onBack={vi.fn()} />);
+    expect(screen.getByText(/disappear after they've been seen/i)).toBeInTheDocument();
+  });
+
+  it("sends the chosen duration to the API", async () => {
+    const user = userEvent.setup();
+    const calls = mockApi({ "PATCH /disappearing": { ...direct, disappear_seconds: 300 } });
+    render(<ConversationInfo conversation={direct} meId={1} onBack={vi.fn()} />);
+
+    await user.selectOptions(screen.getByLabelText("Disappearing messages timer"), "300");
+    await waitFor(() =>
+      expect(
+        calls.some((c) => c.url.includes("/disappearing") && (c.body as { seconds: number })?.seconds === 300)
+      ).toBe(true)
+    );
+  });
+
+  it("lets either side set the timer in a direct chat", () => {
+    mockApi({});
+    render(<ConversationInfo conversation={direct} meId={2} onBack={vi.fn()} />);
+    // No admins in a 1:1, so nobody is locked out.
+    expect(screen.getByLabelText("Disappearing messages timer")).toBeEnabled();
+  });
+
+  it("locks the timer for a plain member of a group", async () => {
+    mockApi(AS_MEMBER);
+    render(<ConversationInfo conversation={group} meId={2} onBack={vi.fn()} />);
+
+    await screen.findByText("Carol Nwosu");
+    expect(screen.getByLabelText("Disappearing messages timer")).toBeDisabled();
+    expect(screen.getByText(/only admins can change the timer/i)).toBeInTheDocument();
+  });
+
+  it("leaves the timer open to a group admin", async () => {
+    mockApi(AS_ADMIN);
+    render(<ConversationInfo conversation={group} meId={1} onBack={vi.fn()} />);
+
+    await screen.findByText("Bob Martinez");
+    expect(screen.getByLabelText("Disappearing messages timer")).toBeEnabled();
+  });
+
+  it("does not fetch a roster for a direct chat, which has none", () => {
+    const calls = mockApi({});
+    render(<ConversationInfo conversation={direct} meId={1} onBack={vi.fn()} />);
+    expect(calls.some((c) => c.url.includes("/members"))).toBe(false);
+  });
+
+  it("offers mute and in-chat search but marks them unbuilt", () => {
+    mockApi({});
+    render(<ConversationInfo conversation={direct} meId={1} onBack={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /mute \(coming soon\)/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /search \(coming soon\)/i })).toBeDisabled();
+  });
+
+  it("goes back to the thread", async () => {
+    const user = userEvent.setup();
+    const onBack = vi.fn();
+    mockApi({});
+    render(<ConversationInfo conversation={direct} meId={1} onBack={onBack} />);
+
+    await user.click(screen.getByRole("button", { name: "Back to conversation" }));
+    expect(onBack).toHaveBeenCalled();
+  });
+});
+
+describe("ConversationInfo — chat color", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    mockApi({});
+  });
+
+  it("starts on Signal's default blue", () => {
+    render(<ConversationInfo conversation={direct} meId={1} onBack={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /chat color: ultramarine/i })).toBeInTheDocument();
+  });
+
+  it("opens the palette and applies a pick", async () => {
+    const user = userEvent.setup();
+    render(<ConversationInfo conversation={direct} meId={1} onBack={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: /chat color:/i }));
+    await user.click(screen.getByRole("radio", { name: "Crimson" }));
+
+    expect(screen.getByRole("button", { name: /chat color: crimson/i })).toBeInTheDocument();
+  });
+
+  it("keeps the choice per conversation", async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<ConversationInfo conversation={direct} meId={1} onBack={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: /chat color:/i }));
+    await user.click(screen.getByRole("radio", { name: "Teal" }));
+    unmount();
+
+    // A different thread is untouched by the first one's colour.
+    render(<ConversationInfo conversation={{ ...direct, id: 42 }} meId={1} onBack={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /chat color: ultramarine/i })).toBeInTheDocument();
   });
 });

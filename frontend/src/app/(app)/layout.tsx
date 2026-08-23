@@ -13,6 +13,7 @@ import { useUnreadTitle } from "@/hooks/useUnreadTitle";
 import { mobilePane, showsChatList, showsTabBar } from "@/lib/shell";
 import { usePreferences } from "@/store/preferences";
 import { useConversations } from "@/store/conversations";
+import { useChatColors } from "@/store/chatColors";
 import { useFavorites } from "@/store/favorites";
 import { SidebarSlot } from "@/components/sidebar/SidebarSlot";
 import { loadCurrentUser } from "@/lib/session";
@@ -90,10 +91,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Theme and favourites live in localStorage, which the server cannot read.
   const hydratePreferences = usePreferences((s) => s.hydrate);
   const hydrateFavorites = useFavorites((s) => s.hydrate);
+  const hydrateChatColors = useChatColors((s) => s.hydrate);
   useEffect(() => {
     hydratePreferences();
     hydrateFavorites();
-  }, [hydratePreferences, hydrateFavorites]);
+    hydrateChatColors();
+  }, [hydratePreferences, hydrateFavorites, hydrateChatColors]);
 
   useEffect(() => {
     // The cookie survives reloads but the store does not, so rehydrate the

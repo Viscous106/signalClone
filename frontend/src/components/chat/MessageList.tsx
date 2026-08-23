@@ -12,12 +12,13 @@ type Props = {
   messages: Message[];
   meId: number;
   isGroup: boolean;
+  chatColor?: string;
   onReply?: (quote: Quote) => void;
   onReact?: (messageId: number, emoji: string) => void;
 };
 
 /** `messages` must be oldest first. */
-export function MessageList({ messages, meId, isGroup, onReply, onReact }: Props) {
+export function MessageList({ messages, meId, isGroup, chatColor, onReply, onReact }: Props) {
   const bottom = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,6 +69,7 @@ export function MessageList({ messages, meId, isGroup, onReply, onReact }: Props
             groupEnd={row.groupEnd}
             // Only the first bubble of a run is labelled, and never in a 1:1.
             showSender={isGroup && !row.outgoing && row.groupStart}
+            chatColor={chatColor}
             onReply={onReply}
             onReact={onReact}
           />

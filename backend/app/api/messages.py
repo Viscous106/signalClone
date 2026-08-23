@@ -87,7 +87,8 @@ def send_message(
     )
     db.add(message)
     db.flush()
-    message.expires_at = disappearing.expiry_for(conversation, message.created_at)
+    # The duration only; the clock starts when it has been read.
+    message.expire_seconds = disappearing.snapshot_seconds(conversation)
     for file in files:
         file.message_id = message.id
         db.add(file)

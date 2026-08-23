@@ -16,6 +16,8 @@ type Props = {
   groupStart: boolean;
   groupEnd: boolean;
   showSender: boolean;
+  /** The conversation's outgoing bubble colour. */
+  chatColor?: string;
   onReply?: (quote: Quote) => void;
   onReact?: (messageId: number, emoji: string) => void;
 };
@@ -89,6 +91,7 @@ export function MessageBubble({
   groupStart,
   groupEnd,
   showSender,
+  chatColor,
   onReply,
   onReact,
 }: Props) {
@@ -120,6 +123,7 @@ export function MessageBubble({
         groupEnd ? "rounded-bl-[18px]" : "rounded-bl-[4px]"
       }`;
 
+  const timerSeconds = message.expire_seconds ?? 0;
   const attachments = message.attachments ?? [];
   const reactions = message.reactions ?? [];
   // A deleted message can be neither answered nor reacted to.
@@ -154,6 +158,9 @@ export function MessageBubble({
       <div className="relative flex max-w-[min(306px,72%)] flex-col">
         <div
           // 306px is Signal's actual cap — a percentage looks wrong when wide.
+          // The colour is a per-conversation choice, so it comes in as a
+          // style rather than a class: Tailwind cannot enumerate it.
+          style={outgoing && chatColor ? { backgroundColor: chatColor } : undefined}
           className={`rounded-[18px] px-3 py-2 ${corners} ${
             outgoing ? "bg-outgoing text-label-oncolor" : "bg-incoming text-label"
           }`}
@@ -197,7 +204,7 @@ export function MessageBubble({
                 outgoing ? "text-label-oncolor/70" : "text-label-2"
               }`}
             >
-              {secondsLeft !== null && (
+              {secondsLeft !== null ? (
                 <span
                   data-testid="bubble-expiry"
                   title={`Disappears in ${shortDuration(secondsLeft)}`}
@@ -206,6 +213,19 @@ export function MessageBubble({
                   <TimerIcon className="h-3 w-3" />
                   {shortDuration(secondsLeft)}
                 </span>
+              ) : (
+                // Carries a timer but nobody has read it yet, so there is no
+                // countdown to show — just that one is waiting.
+                timerSeconds > 0 && (
+                  <span
+                    data-testid="bubble-timer-pending"
+                    title={`Disappears ${shortDuration(timerSeconds)} after it is read`}
+                    className="flex items-center gap-0.5 opacity-60"
+                  >
+                    <TimerIcon className="h-3 w-3" />
+                    {shortDuration(timerSeconds)}
+                  </span>
+                )
               )}
               <span data-testid="bubble-time">{messageTime(message.created_at)}</span>
               {outgoing && <StatusTicks status={message.status ?? null} />}

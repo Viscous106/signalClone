@@ -70,7 +70,13 @@ export type Message = {
   created_at: string;
   edited_at?: string | null;
   deleted_at?: string | null;
-  /** When this message vanishes, or null if it stays. */
+  /** The timer this message carries, in seconds. 0 means it stays. */
+  expire_seconds?: number;
+  /**
+   * When it actually vanishes — null until the clock starts. Disappearing
+   * messages begin counting when read, not when sent, so a message can carry
+   * a duration for a long while before it has a deadline.
+   */
   expires_at?: string | null;
   attachments?: Attachment[];
   reactions?: Reaction[];

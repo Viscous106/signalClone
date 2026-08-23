@@ -15,7 +15,13 @@ export type MessagesState = {
   load: (conversationId: number) => Promise<void>;
   send: (conversationId: number, draft: Draft, meId: number) => Promise<void>;
   applyNew: (message: Message) => void;
-  applyStatus: (conversationId: number, messageId: number, status: MessageStatus) => void;
+  applyStatus: (
+    conversationId: number,
+    messageId: number,
+    status: MessageStatus,
+    /** Set when the read that produced this status also armed the timer. */
+    expiresAt?: string | null
+  ) => void;
   applyReactions: (conversationId: number, messageId: number, reactions: Reaction[]) => void;
   react: (conversationId: number, messageId: number, emoji: string) => Promise<void>;
   /** Drop anything whose timer has run out, without waiting for a reload. */
@@ -148,12 +154,16 @@ export const useMessages = create<MessagesState>((set, get) => ({
     }));
   },
 
-  applyStatus: (conversationId, messageId, status) => {
+  applyStatus: (conversationId, messageId, status, expiresAt) => {
     set((state) => ({
       byConversation: {
         ...state.byConversation,
         [conversationId]: (state.byConversation[conversationId] ?? []).map((m) =>
-          m.id === messageId ? { ...m, status } : m
+          m.id === messageId
+            ? // Only overwrite the deadline when one arrived: a later status
+              // event must not clear a clock that is already running.
+              { ...m, status, ...(expiresAt ? { expires_at: expiresAt } : {}) }
+            : m
         ),
       },
     }));

@@ -14,7 +14,13 @@ export type ServerEvent =
   | { type: "message.new"; payload: Message }
   | {
       type: "message.status";
-      payload: { message_id: number; conversation_id: number; status: string };
+      payload: {
+        message_id: number;
+        conversation_id: number;
+        status: string;
+        /** Set when this read started the disappearing clock. */
+        expires_at?: string | null;
+      };
     }
   | {
       type: "message.reactions";

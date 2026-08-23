@@ -108,6 +108,10 @@ class MessageOut(BaseModel):
     created_at: datetime
     edited_at: datetime | None = None
     deleted_at: datetime | None = None
+    # The timer this message carries, and when it actually lapses. `expires_at`
+    # stays null until every other member has read it — see the disappearing
+    # service. The client needs both: one to label the timer, one to count down.
+    expire_seconds: int = 0
     expires_at: datetime | None = None
     sender: UserBrief | None = None
     attachments: list[AttachmentOut] = Field(default_factory=list)

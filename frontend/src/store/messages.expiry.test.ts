@@ -72,6 +72,37 @@ describe("dropExpired", () => {
   });
 });
 
+describe("applyStatus arming the clock", () => {
+  beforeEach(() => {
+    useMessages.setState({
+      byConversation: { 1: [message({ id: 5, expire_seconds: 3600 })] },
+      typingBy: {},
+      loaded: {},
+    });
+  });
+
+  it("takes the deadline the read handed back", () => {
+    const deadline = future();
+    useMessages.getState().applyStatus(1, 5, "read", deadline);
+    expect(useMessages.getState().byConversation[1][0].expires_at).toBe(deadline);
+  });
+
+  it("still records the status when no clock was started", () => {
+    useMessages.getState().applyStatus(1, 5, "delivered", null);
+    const [held] = useMessages.getState().byConversation[1];
+    expect(held.status).toBe("delivered");
+    expect(held.expires_at).toBeUndefined();
+  });
+
+  it("does not clear a clock that is already running", () => {
+    const deadline = future();
+    useMessages.getState().applyStatus(1, 5, "read", deadline);
+    // A later status event carries no deadline; the countdown must survive it.
+    useMessages.getState().applyStatus(1, 5, "read", null);
+    expect(useMessages.getState().byConversation[1][0].expires_at).toBe(deadline);
+  });
+});
+
 describe("applyReactions", () => {
   beforeEach(() => {
     useMessages.setState({ byConversation: { 1: [message({ id: 5 })] }, typingBy: {}, loaded: {} });

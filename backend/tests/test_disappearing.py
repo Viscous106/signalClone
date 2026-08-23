@@ -87,29 +87,132 @@ class TestInAGroup:
         assert set_timer(cast["bob"], group["id"], 3600).status_code == 403
 
 
+def read_up_to(actor, conv_id, message_id):
+    return actor.post(f"/api/conversations/{conv_id}/read", json={"message_id": message_id})
+
+
+class TestTheClockStartsOnRead:
+    """A message nobody has opened has not served its purpose yet."""
+
+    def test_sending_carries_the_duration_but_no_deadline(self, cast, direct):
+        set_timer(cast["alice"], direct["id"], 3600)
+        sent = send(cast["alice"], direct["id"], "vanishing").json()
+
+        assert sent["expire_seconds"] == 3600
+        assert sent["expires_at"] is None
+
+    def test_the_recipient_reading_it_starts_the_clock(self, cast, direct):
+        set_timer(cast["alice"], direct["id"], 3600)
+        sent = send(cast["alice"], direct["id"], "vanishing").json()
+
+        read_up_to(cast["bob"], direct["id"], sent["id"])
+
+        messages = cast["alice"].get(f"/api/conversations/{direct['id']}/messages").json()
+        [mine] = [m for m in messages if m["id"] == sent["id"]]
+        assert mine["expires_at"] is not None
+
+    def test_the_deadline_is_the_duration_after_the_read(self, cast, direct):
+        set_timer(cast["alice"], direct["id"], 3600)
+        sent = send(cast["alice"], direct["id"], "vanishing").json()
+        read_up_to(cast["bob"], direct["id"], sent["id"])
+
+        messages = cast["alice"].get(f"/api/conversations/{direct['id']}/messages").json()
+        [mine] = [m for m in messages if m["id"] == sent["id"]]
+
+        # An hour from the read, not an hour from the send.
+        expires = datetime.fromisoformat(mine["expires_at"])
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        assert abs((expires - datetime.now(timezone.utc)) - timedelta(hours=1)) < timedelta(seconds=5)
+
+    def test_the_senders_own_read_does_not_start_it(self, cast, direct):
+        set_timer(cast["alice"], direct["id"], 3600)
+        sent = send(cast["alice"], direct["id"], "vanishing").json()
+
+        # Alice reading her own thread proves nothing about Bob seeing it.
+        read_up_to(cast["alice"], direct["id"], sent["id"])
+
+        messages = cast["alice"].get(f"/api/conversations/{direct['id']}/messages").json()
+        [mine] = [m for m in messages if m["id"] == sent["id"]]
+        assert mine["expires_at"] is None
+
+    def test_an_unread_message_never_lapses(self, cast, direct):
+        set_timer(cast["alice"], direct["id"], 30)
+        send(cast["alice"], direct["id"], "unseen")
+
+        # Well past 30 seconds of wall clock would still not remove it: the
+        # clock has not started, so there is nothing to run out.
+        assert "unseen" in bodies(cast["alice"], direct["id"])
+
+    def test_reading_twice_does_not_restart_the_clock(self, cast, direct, db):
+        from app.db.models import Message
+
+        set_timer(cast["alice"], direct["id"], 3600)
+        sent = send(cast["alice"], direct["id"], "vanishing").json()
+
+        read_up_to(cast["bob"], direct["id"], sent["id"])
+        db.expire_all()
+        first = db.get(Message, sent["id"]).expires_at
+
+        read_up_to(cast["bob"], direct["id"], sent["id"])
+        db.expire_all()
+        assert db.get(Message, sent["id"]).expires_at == first
+
+
+class TestInAGroupTheLastReaderStarts:
+    @pytest.fixture()
+    def group(self, cast):
+        return cast["alice"].post(
+            "/api/conversations",
+            json={"name": "Weekend Trip", "member_ids": [cast["bob"].id, cast["carol"].id]},
+        ).json()
+
+    def test_one_reader_out_of_two_is_not_enough(self, cast, group):
+        set_timer(cast["alice"], group["id"], 3600)
+        sent = send(cast["alice"], group["id"], "vanishing").json()
+
+        read_up_to(cast["bob"], group["id"], sent["id"])
+
+        messages = cast["alice"].get(f"/api/conversations/{group['id']}/messages").json()
+        [mine] = [m for m in messages if m["id"] == sent["id"]]
+        # Starting on the first read would delete it out from under Carol.
+        assert mine["expires_at"] is None
+
+    def test_the_last_reader_starts_it(self, cast, group):
+        set_timer(cast["alice"], group["id"], 3600)
+        sent = send(cast["alice"], group["id"], "vanishing").json()
+
+        read_up_to(cast["bob"], group["id"], sent["id"])
+        read_up_to(cast["carol"], group["id"], sent["id"])
+
+        messages = cast["alice"].get(f"/api/conversations/{group['id']}/messages").json()
+        [mine] = [m for m in messages if m["id"] == sent["id"]]
+        assert mine["expires_at"] is not None
+
+
 class TestExpiry:
-    def test_a_message_sent_under_a_timer_gets_a_deadline(self, cast, direct):
-        set_timer(cast["alice"], direct["id"], 3600)
-        sent = send(cast["alice"], direct["id"], "vanishing").json()
-        assert sent["expires_at"] is not None
-
     def test_a_message_sent_with_the_timer_off_has_none(self, cast, direct):
-        assert send(cast["alice"], direct["id"], "permanent").json()["expires_at"] is None
+        sent = send(cast["alice"], direct["id"], "permanent").json()
+        assert sent["expire_seconds"] == 0
+        assert sent["expires_at"] is None
 
-    def test_the_deadline_matches_the_timer(self, cast, direct):
-        set_timer(cast["alice"], direct["id"], 3600)
-        sent = send(cast["alice"], direct["id"], "vanishing").json()
+    def test_reading_a_message_with_no_timer_arms_nothing(self, cast, direct):
+        sent = send(cast["alice"], direct["id"], "permanent").json()
+        read_up_to(cast["bob"], direct["id"], sent["id"])
 
-        created = datetime.fromisoformat(sent["created_at"])
-        expires = datetime.fromisoformat(sent["expires_at"])
-        assert abs((expires - created) - timedelta(hours=1)) < timedelta(seconds=2)
+        messages = cast["alice"].get(f"/api/conversations/{direct['id']}/messages").json()
+        [mine] = [m for m in messages if m["id"] == sent["id"]]
+        assert mine["expires_at"] is None
 
     def test_changing_the_timer_does_not_touch_older_messages(self, cast, direct):
         first = send(cast["alice"], direct["id"], "before").json()
         set_timer(cast["alice"], direct["id"], 30)
+        read_up_to(cast["bob"], direct["id"], first["id"])
 
         messages = cast["alice"].get(f"/api/conversations/{direct['id']}/messages").json()
         [before] = [m for m in messages if m["id"] == first["id"]]
+        # Snapshotted at 0 when it was sent, so a later timer cannot reach back.
+        assert before["expire_seconds"] == 0
         assert before["expires_at"] is None
 
     def test_a_lapsed_message_is_hidden(self, cast, direct, db):
@@ -149,7 +252,8 @@ class TestExpiry:
 
     def test_a_message_still_in_date_stays(self, cast, direct):
         set_timer(cast["alice"], direct["id"], 3600)
-        send(cast["alice"], direct["id"], "still here")
+        sent = send(cast["alice"], direct["id"], "still here").json()
+        read_up_to(cast["bob"], direct["id"], sent["id"])
         assert "still here" in bodies(cast["alice"], direct["id"])
 
     def test_expiring_takes_the_attachments_with_it(self, cast, direct, db):

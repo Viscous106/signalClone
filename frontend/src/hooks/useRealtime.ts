@@ -38,7 +38,8 @@ export function useRealtime(meId: number | undefined) {
             .applyStatus(
               event.payload.conversation_id,
               event.payload.message_id,
-              event.payload.status as MessageStatus
+              event.payload.status as MessageStatus,
+              event.payload.expires_at
             );
           break;
         case "message.reactions":

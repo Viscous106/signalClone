@@ -2,17 +2,21 @@
 
 The timer is a property of the conversation, not of the sender: everyone in a
 thread sees the same duration, and changing it announces itself with a system
-message. Each message is stamped with a fixed `expires_at` when it is sent, so
-the thread expires identically for every member regardless of when they read.
+message.
+
+The clock starts when a message has been **read**, not when it was sent. A
+message nobody has opened has not served its purpose, and deleting it would
+lose it unseen — so `expire_seconds` is snapshotted at send time and
+`expires_at` stays null until the last other member reads it.
 """
 
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Query, Session
 
-from app.db.models import Conversation, Message
+from app.db.models import Conversation, ConversationMember, Message, MessageReceipt
 
 # Signal's own durations. 0 is off.
 CHOICES: dict[int, str] = {
@@ -37,15 +41,61 @@ def require_valid(seconds: int) -> int:
     return seconds
 
 
-def expiry_for(conversation: Conversation, sent_at: datetime) -> datetime | None:
-    """When a message sent now should vanish, or None if the timer is off."""
-    seconds = conversation.disappear_seconds or 0
-    if seconds <= 0:
-        return None
-    if sent_at.tzinfo is None:
-        # SQLite hands back naive datetimes even for timezone=True columns.
-        sent_at = sent_at.replace(tzinfo=timezone.utc)
-    return sent_at + timedelta(seconds=seconds)
+def snapshot_seconds(conversation: Conversation) -> int:
+    """The timer to stamp on a message being sent now. 0 means it stays.
+
+    Taken at send time so that changing the thread's timer later cannot reach
+    back and alter the lifetime of a message already delivered.
+    """
+    return max(0, conversation.disappear_seconds or 0)
+
+
+def arm(db: Session, messages: list[Message]) -> list[Message]:
+    """Start the clock on messages that everyone else has now read.
+
+    Returns those newly armed, so the caller can tell their senders. A group
+    message waits for the *last* other member: starting on the first read
+    would delete it out from under everyone still to see it — the same
+    weakest-state rule the delivery ticks use.
+    """
+    candidates = [
+        m for m in messages if m.expire_seconds and m.expire_seconds > 0 and m.expires_at is None
+    ]
+    if not candidates:
+        return []
+
+    conversation_ids = {m.conversation_id for m in candidates}
+    others_per_conversation = dict(
+        db.query(ConversationMember.conversation_id, func.count(ConversationMember.id))
+        .filter(ConversationMember.conversation_id.in_(conversation_ids))
+        .group_by(ConversationMember.conversation_id)
+        .all()
+    )
+
+    # count() over a nullable column counts only the non-nulls.
+    read_counts = dict(
+        db.query(MessageReceipt.message_id, func.count(MessageReceipt.read_at))
+        .filter(MessageReceipt.message_id.in_([m.id for m in candidates]))
+        .group_by(MessageReceipt.message_id)
+        .all()
+    )
+
+    now = datetime.now(timezone.utc)
+    armed = []
+    for message in candidates:
+        # Everyone but the sender has to have read it.
+        others = max(0, others_per_conversation.get(message.conversation_id, 0) - 1)
+        if others == 0:
+            # A conversation with nobody else in it has no reader to wait for.
+            continue
+        if read_counts.get(message.id, 0) < others:
+            continue
+        message.expires_at = now + timedelta(seconds=message.expire_seconds)
+        armed.append(message)
+
+    if armed:
+        db.commit()
+    return armed
 
 
 def exclude_expired(query: Query, now: datetime | None = None) -> Query:

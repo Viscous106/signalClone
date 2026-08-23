@@ -3,8 +3,7 @@
 import Link from "next/link";
 
 import { Avatar } from "@/components/ui/Avatar";
-import { BackIcon, CallIcon, SearchIcon, StarIcon, TimerIcon } from "@/components/ui/icons";
-import { disappearLabel } from "@/lib/disappearing";
+import { BackIcon, CallIcon, SearchIcon, StarIcon } from "@/components/ui/icons";
 import { listTimestamp } from "@/lib/format";
 import { conversationTitle, otherMember } from "@/lib/conversation";
 import type { Conversation } from "@/lib/types";
@@ -15,13 +14,11 @@ export function ChatHeader({
   meId,
   typingLabel,
   onOpenInfo,
-  onOpenTimer,
 }: {
   conversation: Conversation;
   meId: number;
   typingLabel: string | null;
   onOpenInfo?: () => void;
-  onOpenTimer?: () => void;
 }) {
   const title = conversationTitle(conversation, meId);
   const counterpart = otherMember(conversation, meId);
@@ -29,7 +26,6 @@ export function ChatHeader({
   const favoriteIds = useFavorites((s) => s.ids);
   const toggleFavorite = useFavorites((s) => s.toggle);
   const isFavorite = favoriteIds.includes(conversation.id);
-  const timer = conversation.disappear_seconds ?? 0;
 
   const subtitle = typingLabel
     ? `${typingLabel} is typing…`
@@ -62,11 +58,11 @@ export function ChatHeader({
         url={conversation.avatar_url ?? counterpart?.avatar_url}
         online={counterpart?.online ?? false}
       />
-      {conversation.type === "group" && onOpenInfo ? (
+      {onOpenInfo ? (
         <button
           onClick={onOpenInfo}
           className="min-w-0 flex-1 text-left"
-          aria-label="Group info"
+          aria-label={conversation.type === "group" ? "Group info" : "Conversation info"}
         >
           <p className="truncate text-body1 font-semibold text-label">{title}</p>
           <p className="truncate text-body2 text-label-2">{subtitle}</p>
@@ -79,32 +75,6 @@ export function ChatHeader({
       )}
 
       <div className="flex items-center gap-1 text-label-2">
-        {onOpenTimer && (
-          <button
-            onClick={onOpenTimer}
-            aria-label={
-              timer > 0
-                ? `Disappearing messages: ${disappearLabel(timer)}`
-                : "Disappearing messages: off"
-            }
-            title={
-              timer > 0 ? `Disappearing messages — ${disappearLabel(timer)}` : "Disappearing messages"
-            }
-            className={`flex items-center gap-1 rounded-md p-2 hover:bg-surface-2 ${
-              timer > 0 ? "text-accent" : "hover:text-label"
-            }`}
-          >
-            <TimerIcon />
-            {/* The duration beside the icon: an armed timer should never be
-                something you have to hover to discover. */}
-            {/* The accent-coloured icon carries it on a phone; the duration
-                spells it out once there is room. */}
-            {timer > 0 && (
-              <span className="hidden text-caption sm:inline">{disappearLabel(timer)}</span>
-            )}
-          </button>
-        )}
-
         {/* The only way in or out of the Favorites filter. */}
         <button
           onClick={() => toggleFavorite(conversation.id)}

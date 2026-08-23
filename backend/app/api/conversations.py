@@ -304,10 +304,16 @@ def mark_read(
 
     # Tell each sender their message has been read, so their ticks fill in.
     changed = receipt_service.mark_read(db, user.id, conversation_id, payload.message_id)
+
+    # Reading is what starts a disappearing message's clock, so this is the
+    # moment to arm anything the last outstanding reader has now seen.
+    armed = {m.id: m.expires_at for m in disappearing.arm(db, changed)}
+
     manager = request.app.state.ws_manager
     for message in changed:
         if message.sender_id is None:
             continue
+        expires_at = armed.get(message.id)
         broadcast(
             manager,
             [message.sender_id],
@@ -317,6 +323,9 @@ def mark_read(
                     "message_id": message.id,
                     "conversation_id": conversation_id,
                     "status": receipt_service.READ,
+                    # Present only when this read started the clock, so the
+                    # sender's countdown begins at the same instant.
+                    "expires_at": expires_at.isoformat() if expires_at else None,
                 },
             },
         )

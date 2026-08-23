@@ -197,9 +197,13 @@ class Message(Base):
     edited_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     # Soft delete so "This message was deleted" can render in place.
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    # Stamped at send time from the conversation's timer. Null means it stays.
-    # A fixed stamp rather than a countdown started on read: the whole thread
-    # then expires identically for everyone, which is what makes it auditable.
+    # The conversation's timer as it stood when this was sent, in seconds.
+    # Snapshotted so a later change to the thread's timer cannot retroactively
+    # shorten or lengthen the life of a message already out there. 0 is off.
+    expire_seconds: Mapped[int] = mapped_column(Integer, default=0)
+    # Null until the clock starts. Disappearing messages begin counting when
+    # they have been *read*, not when they were sent: an unread message has
+    # not served its purpose yet, and destroying it would lose it unseen.
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), index=True)
 
     conversation: Mapped["Conversation"] = relationship(back_populates="messages")

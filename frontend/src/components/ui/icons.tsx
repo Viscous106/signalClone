@@ -150,3 +150,34 @@ export function ReactIcon({ className = "h-4 w-4" }: IconProps) {
     </svg>
   );
 }
+
+/** Bell, for mute. */
+export function BellIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10.3 19a2 2 0 0 0 3.4 0" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** A struck-through timer — the icon Signal uses for the disappearing row. */
+export function TimerOffIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <circle cx="12" cy="13" r="8" />
+      <path d="M12 9v4M9 2h6" strokeLinecap="round" />
+      <path d="M3 3l18 18" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Painter's palette, for the chat colour. */
+export function PaletteIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M12 3a9 9 0 0 0 0 18c1.4 0 2-.9 2-1.8 0-1.6-1.6-1.9-1.6-3.2 0-1 .8-1.8 1.8-1.8H16a5 5 0 0 0 5-5c0-3.6-4-6.2-9-6.2Z" strokeLinecap="round" />
+      <path d="M7.5 10h.01M10 6.5h.01M15 7.5h.01" strokeLinecap="round" strokeWidth="2.4" />
+    </svg>
+  );
+}
