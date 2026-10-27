@@ -1,11 +1,62 @@
 # Signal Clone
 
-A functional clone of Signal — registration, contacts, one-to-one and group
-messaging in real time — rebuilt to match the desktop app's look and feel.
+A real-time messenger with Signal Desktop's look and feel: registration,
+contacts, one-to-one and group chats, receipts, typing indicators, replies,
+reactions, attachments and disappearing messages.
 
-Encryption is **simulated**, not implemented: per the brief, the focus is the
-Signal experience and the messaging workflows rather than a real cryptographic
-protocol.
+Encryption is **simulated**, not implemented: the focus is the messaging
+experience and its workflows rather than a cryptographic protocol.
+
+> **Origin.** This started as a take-home assessment for an internship
+> (brief: rebuild Signal's messaging workflows and desktop UI) and is
+> submitted as my End-Term Software Project. All code and commits are my own.
+
+## Problem statement
+
+Messaging looks simple until it has to behave correctly for more than two
+people at once. A message must never be lost when a connection drops. A group
+message is "read" only when *everyone* has read it. Typing indicators, unread
+counts and online status must update instantly across every open window. And a
+new user should never land in an empty, confusing app. Most student chat
+projects stop at "send text, refresh to see it"; the hard part is the state
+that has to stay consistent in real time.
+
+## Target users
+
+- **People who chat one-to-one and in small groups** (friends, study groups,
+  small teams) and expect the polish of a mainstream messenger: instant
+  delivery, receipts, presence and keyboard shortcuts.
+- **Group admins** who need to add and remove members, manage roles and see
+  a record of membership changes.
+
+## Solution
+
+A single FastAPI service that persists every message over HTTP first and only
+then broadcasts it over a WebSocket, so a dropped connection can never lose a
+message, behind a Next.js client that reproduces Signal Desktop's interface.
+Delivery and read state are stored per recipient, so group ticks are always
+correct.
+
+### Main workflows
+
+| # | Workflow | What happens |
+|---|---|---|
+| 1 | **Register and sign in** | Pick a country, enter a phone number, verify with the OTP (mocked: `123456`) and set a profile name and photo. A JWT session follows. New accounts get the demo users as contacts, so the app is never empty. |
+| 2 | **Find a contact and start a chat** | Search contacts, add someone by phone number, open a direct conversation. |
+| 3 | **Message in real time** | Send text, replies, reactions and image or file attachments. The other window receives the message instantly, ticks move from sent → delivered → read, and a typing indicator shows while the other person types. |
+| 4 | **Run a group** | Create a group, add or remove members and change roles. Each change is recorded as a system notice, and group ticks reflect the slowest reader. |
+| 5 | **Disappearing messages** | Set a timer on a conversation. Each message's timer starts when it is read. Expired messages are hidden immediately and deleted the next time the conversation is opened. |
+
+### Error handling
+
+- A wrong OTP, an invalid phone number, a number not registered on the app,
+  or trying to add yourself as a contact each return a clear error. Adding an
+  existing contact again does nothing rather than creating a duplicate.
+- Requests for conversations you are not a member of are refused, and so are
+  actions your group role does not allow.
+- Attachments are checked against a size cap and an allowed-type list.
+- The WebSocket reconnects automatically. Messages are written over HTTP, so a
+  dropped socket never loses one.
 
 ## Try it
 
@@ -16,8 +67,9 @@ code is always `123456`.**
 
 The free plan allows no persistent disk, so the database is rebuilt from the
 seed whenever the instance restarts — the demo cast is always there, and
-anything you create is not permanent. A cold instance takes a few seconds to
-wake.
+anything you create is not permanent. A sleeping instance takes up to a minute
+to wake. **If the first load shows a blank or half-loaded page, wait a few
+seconds and refresh** — Render drops some requests while the instance starts.
 
 ### Or run it locally
 
@@ -29,10 +81,11 @@ make run       # api on :8000, web on :3000
 
 Then open <http://localhost:3000>.
 
-**Register with your own number and the app is already populated** — you get
-the demo cast as contacts, two direct threads with history (one unread), and a
-place in the group. Seeding only one hardcoded account would leave anyone who
-signs up staring at an empty app. Switch it off with `STARTER_CHATS=false`.
+**Register with your own number and you start with people to talk to.** The
+demo cast is added to your contacts, so search and new chats work straight
+away. Conversations are not fabricated: you are in a chat only once someone
+starts one with you, and in a group only once an admin adds you. Switch this
+off with `DEMO_CONTACTS=false`.
 
 To watch messages, ticks and typing indicators move live, sign in as two of the
 seeded accounts in separate browser profiles — or one normal window and one
@@ -96,6 +149,24 @@ works, and what is genuinely finished.
 Reference: **[architecture](docs/ARCHITECTURE.md)** ·
 **[schema](docs/SCHEMA.md)** · **[API](docs/API.md)** ·
 **[UI spec](docs/UI-SPEC.md)** · **[plan](docs/PLAN.md)**
+
+## Environment variables
+
+None are needed to run locally; every setting has a development default in
+`backend/app/core/config.py`. Never commit real values. Use `backend/.env`
+locally (gitignored) and the host's dashboard in production.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `JWT_SECRET` | dev placeholder | Signs session tokens. **Must be set in production** (32+ bytes); `render.yaml` generates one |
+| `DATABASE_URL` | `sqlite:///backend/signal.db` | SQLAlchemy database URL; the Docker image points it at `/data` |
+| `MOCK_OTP` | `123456` | The constant verification code (auth is mocked) |
+| `JWT_EXPIRE_DAYS` | `30` | Session lifetime |
+| `PRESENCE_WINDOW_SECONDS` | `120` | How recently a user must have been seen to show as online |
+| `CORS_ORIGINS` | `["http://localhost:3000"]` | Allowed origins in development (production is same-origin) |
+| `SEED_ON_BOOT` | `true` | Load the demo cast when the database is empty |
+| `DEMO_CONTACTS` | `true` | Give new accounts the demo users as contacts |
+| `NEXT_PUBLIC_API_BASE`, `NEXT_PUBLIC_WS_URL` | same origin | Only needed if the API runs on a different host from the frontend |
 
 ## Database
 
@@ -177,26 +248,12 @@ docker build -t signal-clone .
 docker run -p 8000:8000 -v signal-data:/data signal-clone
 ```
 
-### Fly.io (recommended)
-
-`fly.toml` deploys it with a persistent volume, so data survives redeploys.
-
-```bash
-fly launch --no-deploy          # claims the app name, keeps our fly.toml
-fly volumes create signal_data --size 1 --region bom
-fly secrets set JWT_SECRET="$(openssl rand -hex 32)"
-fly deploy
-```
-
-A suspended machine resumes in about a second, so the first visit is not the
-minute-long cold start a free Render instance gives.
-
 ### Render
 
-`render.yaml` also deploys it, on the free plan.
+`render.yaml` deploys it on the free plan: Render → New → Blueprint → this
+repository. It generates `JWT_SECRET` automatically.
 
-Two caveats specific to Render's **free** plan, which is why Fly is listed
-first:
+Two caveats specific to Render's **free** plan:
 
 - **No persistent disk**, so the database is rebuilt from the seed on every
   deploy and whenever a sleeping instance wakes. The demo accounts are always
